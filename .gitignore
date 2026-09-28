@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ROS 2 / Colcon / Build artifacts
+build/
+install/
+log/
+
+# IDE / System
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
