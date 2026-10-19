@@ -166,3 +166,50 @@ docker exec -it --user developer robotica_inteligente_grado bash -c \
 docker exec -it --user developer robotica_inteligente_grado bash -c \
   "source /opt/ros/jazzy/setup.bash && ros2 topic hz /rko_lio/odometry && ros2 run tf2_tools view_frames"
 ```
+
+---
+
+## 7. Evidencias Experimentales y Capturas de Ejecución
+
+### 7.1. Registro de Terminales de Operación
+
+Durante la realización del Bloque 3 se coordinaron tres terminales de trabajo conectadas al contenedor:
+
+1. **Terminal 1 — Lanzamiento del Estimador RKO-LIO:**
+   Inicialización de parámetros extrínsecos, calibración del marco inercial de odometría y arranque del emparejamiento iterativo de escaneos.
+   ![Terminal 1 - Lanzamiento RKO-LIO](capturas/terminales/terminal_1_rko_lio_launch.png)
+
+2. **Terminal 2 — Reproducción del Rosbag Real (Oxford Spires Dataset):**
+   Reproducción sincronizada del dataset del *Keble College* mediante `ros2 bag play` con publicación del reloj temporal en `/clock`.
+   ![Terminal 2 - Reproducción Rosbag](capturas/terminales/terminal_2_rosbag_play.png)
+
+3. **Terminal 3 — Introspección del Middleware y Árbol TF:**
+   Monitorización de frecuencia nominal de odometría (~10.02 Hz en `/rko_lio/odometry`), volcado de la transformación `odom -> pandar` y extracción del diagrama del árbol TF mediante `view_frames`.
+   ![Terminal 3 - Diagnóstico TF](capturas/terminales/terminal_3_introspeccion_tf.png)
+
+4. **Entorno de Trabajo Multi-terminal:**
+   Disposición simultánea de las terminales de control en el escritorio de trabajo.
+   ![Entorno Multi-terminal](capturas/terminales/terminales_workspace_bloque3.png)
+
+---
+
+### 7.2. Fases del Recorrido y Reconstrucción 3D en RViz2
+
+A continuación se ilustran las cuatro fases clave del recorrido del sensor durante el procesamiento de la secuencia urbana en Keble College:
+
+1. **Fase 1: Inicialización y Calibración (t = 5.2s):**
+   Recepción del primer barrido LiDAR, fijación del marco inercial `odom` y alineación inicial de los marcos espaciales (`odom -> pandar`).
+   ![Fase 1 - Inicialización y Calibración](capturas/recorrido/1_inicializacion_t5s.png)
+
+2. **Fase 2: Avance por el Claustro y Acumulación Voxelizada (t = 65.1s):**
+   El sensor avanza a lo largo de la galería longitudinal. El mapa local (`/rko_lio/local_map`) acumula incrementalmente los vóxeles métricos (1.0 m) y proyecta la trayectoria continua de odometría en color cian.
+   ![Fase 2 - Avance Claustro](capturas/recorrido/2_avance_claustro_t65s.png)
+
+3. **Fase 3: Maniobra de Giro y Preintegración Inercial (t = 140.1s):**
+   En la esquina del patio, la alta frecuencia de la IMU (400 Hz) absorbe la velocidad angular rápida, evitando la divergencia de la orientación y preservando la ortogonalidad de los muros.
+   ![Fase 3 - Giro en Esquina](capturas/recorrido/3_giro_patio_t140s.png)
+
+4. **Fase 4: Reconstrucción 3D Completa y Mapa Consolidado (t = 280.1s):**
+   Final de la secuencia con el mapa denso tridimensional consolidado del cuadrángulo de Keble College, con los marcos de referencia geométricos (`odom -> pandar`) y la trayectoria global.
+   ![Fase 4 - Reconstrucción 3D Completa](capturas/recorrido/4_reconstruccion_completa_t280s.png)
+
