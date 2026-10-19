@@ -1,0 +1,8 @@
+digraph G {
+"odom" -> "pandar"[label=" Broadcaster: rko_lio_online_node\nAverage rate: 10.0 Hz\nBuffer length: 5.0 s\nMost recent transform: 1710255657.100\nOldest transform: 1710255652.100\n"];
+"pandar" -> "imu_sensor_frame"[label=" Broadcaster: static_transform_publisher\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result - RKO-LIO Pipeline (Bloque 3)";
+"Recorded at time: 1710255657.100"[ shape=plaintext ] ;
+}->"odom";
+}

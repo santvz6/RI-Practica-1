@@ -1,0 +1,43 @@
+digraph rqt_graph_rko_lio {
+    rankdir=LR;
+    node [shape=box, style=filled, fontname="Helvetica"];
+    edge [fontname="Helvetica", fontsize=10];
+
+    // Nodes
+    node [fillcolor="#cfe2f3", color="#3d85c6"]
+    rosbag [label="/rosbag2_player\n(Playback del Oxford Dataset)"];
+    rko_lio [label="/rko_lio_online_node\n(Estimador LiDAR-Inercial LIO)"];
+    rviz [label="/rviz2\n(Visualización 3D)"];
+
+    // Topics
+    node [fillcolor="#d9ead3", color="#6aa84f", shape=ellipse, style="filled,rounded"]
+    topic_clock [label="/clock\n[rosgraph_msgs/Clock]"];
+    topic_imu [label="/alphasense_driver_ros/imu\n[sensor_msgs/Imu ~400Hz]"];
+    topic_pandar [label="/hesai/pandar\n[sensor_msgs/PointCloud2 ~10Hz]"];
+    topic_odom [label="/rko_lio/odometry\n[nav_msgs/Odometry]"];
+    topic_tf [label="/tf\n[tf2_msgs/TFMessage (odom -> pandar)]"];
+    topic_map [label="/rko_lio/local_map\n[sensor_msgs/PointCloud2]"];
+    topic_deskewed [label="/rko_lio/deskewed_scan\n[sensor_msgs/PointCloud2]"];
+
+    // Connections from rosbag
+    rosbag -> topic_clock;
+    rosbag -> topic_imu;
+    rosbag -> topic_pandar;
+
+    // Connections to rko_lio
+    topic_clock -> rko_lio;
+    topic_imu -> rko_lio;
+    topic_pandar -> rko_lio;
+
+    // Outputs from rko_lio
+    rko_lio -> topic_odom;
+    rko_lio -> topic_tf;
+    rko_lio -> topic_map;
+    rko_lio -> topic_deskewed;
+
+    // Connections to rviz2
+    topic_tf -> rviz;
+    topic_odom -> rviz;
+    topic_map -> rviz;
+    topic_deskewed -> rviz;
+}
