@@ -22,3 +22,10 @@ log/
 .vscode/
 *.swp
 *~
+
+# Datasets and Large Rosbag files
+*.db3
+*.db3.*
+*.mcap
+*.bag
+1710255615_*

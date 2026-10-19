@@ -1,4 +1,5 @@
-# 📊 Reporte de Introspección del Middleware ROS 2
+# Análisis Técnico del Middleware ROS 2 (Bloque 2)
+## Pila de Navegación Nav2 y Localización AMCL
 
 ## 1. Nodos Activos (75)
 

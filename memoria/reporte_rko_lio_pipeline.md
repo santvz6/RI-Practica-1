@@ -1,5 +1,5 @@
-# 📊 Reporte de Introspección y Análisis del Pipeline LIO (Bloque 3)
-## Odometría LiDAR-Inercial con Datos Reales (Oxford Spires Dataset & RKO-LIO)
+# Análisis Técnico del Pipeline LIO (Bloque 3)
+## Odometría LiDAR-Inercial con Datos Reales (Oxford Spires Dataset y RKO-LIO)
 
 ---
 
@@ -71,7 +71,7 @@ flowchart LR
 
 ---
 
-## 4. Explicación Matemática y Sensorial del Pipeline (Deep-Dive)
+## 4. Explicación Matemática y Sensorial del Pipeline
 
 El pipeline RKO-LIO resuelve de manera conjunta la cinemática del robot mediante un esquema en cascada:
 
