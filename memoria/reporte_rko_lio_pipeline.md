@@ -195,21 +195,21 @@ Durante la realización del Bloque 3 se coordinaron tres terminales de trabajo c
 
 ### 7.2. Fases del Recorrido y Reconstrucción 3D en RViz2
 
-A continuación se ilustran las cuatro fases clave del recorrido del sensor durante el procesamiento de la secuencia urbana en Keble College:
+A continuación se ilustran las cuatro fases del recorrido del robot a lo largo de la galería del claustro hacia la Capilla de Keble College:
 
-1. **Fase 1: Inicialización y Calibración (t = 5.2s):**
-   Recepción del primer barrido LiDAR, fijación del marco inercial `odom` y alineación inicial de los marcos espaciales (`odom -> pandar`).
+1. **Fase 1: Inicialización y Calibración en el Origen (t = 5.2s):**
+   Recepción del primer barrido LiDAR (`/rko_lio/frame`), fijación del marco inercial `odom`, despliegue del modelo 3D del robot y sensor (`/robot_marker`) con sus ejes coordenados (`Robot Axes`), y alineación inicial de marcos espaciales (`odom -> pandar`).
    ![Fase 1 - Inicialización y Calibración](capturas/recorrido/1_inicializacion_t5s.png)
 
-2. **Fase 2: Avance por el Claustro y Acumulación Voxelizada (t = 65.1s):**
-   El sensor avanza a lo largo de la galería longitudinal. El mapa local (`/rko_lio/local_map`) acumula incrementalmente los vóxeles métricos (1.0 m) y proyecta la trayectoria continua de odometría en color cian.
+2. **Fase 2: Avance Longitudinal por el Claustro Sur (t = 25.0s):**
+   El robot avanza 19 metros a lo largo de la galería longitudinal. El mapa local (`/rko_lio/local_map`) acumula incrementalmente los vóxeles métricos (1.0 m) y la estela de flechas de odometría (`/rko_lio/odometry`) traza el recorrido continuo en color amarillo.
    ![Fase 2 - Avance Claustro](capturas/recorrido/2_avance_claustro_t65s.png)
 
-3. **Fase 3: Maniobra de Giro y Preintegración Inercial (t = 140.1s):**
-   En la esquina del patio, la alta frecuencia de la IMU (400 Hz) absorbe la velocidad angular rápida, evitando la divergencia de la orientación y preservando la ortogonalidad de los muros.
-   ![Fase 3 - Giro en Esquina](capturas/recorrido/3_giro_patio_t140s.png)
+3. **Fase 3: Tránsito Intermedio Frente a Soportales (t = 45.0s):**
+   El robot alcanza los 38 metros de recorrido frente a la arquería y columnas góticas del claustro. La fusión LiDAR-inercial mantiene la consistencia geométrica sin deriva métrica apreciable.
+   ![Fase 3 - Tránsito Intermedio](capturas/recorrido/3_giro_patio_t140s.png)
 
-4. **Fase 4: Reconstrucción 3D Completa y Mapa Consolidado (t = 280.1s):**
-   Final de la secuencia con el mapa denso tridimensional consolidado del cuadrángulo de Keble College, con los marcos de referencia geométricos (`odom -> pandar`) y la trayectoria global.
-   ![Fase 4 - Reconstrucción 3D Completa](capturas/recorrido/4_reconstruccion_completa_t280s.png)
+4. **Fase 4: Llegada Frente a la Fachada de la Capilla de Keble (t = 65.0s):**
+   Avance final de 55 metros alcanzando la apertura hacia la Capilla de Keble College, con el mapa denso tridimensional consolidado del corredor, los anillos de haz láser y la estela completa de odometría.
+   ![Fase 4 - Llegada a la Capilla](capturas/recorrido/4_reconstruccion_completa_t280s.png)
 
