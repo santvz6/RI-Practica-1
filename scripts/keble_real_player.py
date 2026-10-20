@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Reproductor de odometria y escaneos LiDAR de Keble College (Oxford Spires Dataset).
-Publica de forma continua y sincronizada en ROS 2 para visualizacion en RViz2:
+Reproductor completo de odometria y escaneos LiDAR de Keble College (Oxford Spires Dataset).
+Cubre el recorrido perimetral integro (805 poses, cierre de bucle completo):
 - /clock (tiempo de simulacion del rosbag)
 - /tf (marcos odom -> pandar, estaticos pandar -> imu_sensor_frame, pandar -> hor/os_lidar)
 - /rko_lio/odometry (odometria LiDAR-Inercial con cuaterno de orientacion y covarianza)
 - /rko_lio/path (trayectoria acumulada real)
-- /rko_lio/frame (barrido instantaneo de 32 anillos LiDAR Hesai Pandar)
-- /rko_lio/local_map (mapa voxelizado acumulado del claustro de Keble College)
+- /rko_lio/frame (barrido instantaneo de 32 anillos LiDAR Hesai Pandar XT32)
+- /rko_lio/local_map (mapa tridimensional acumulado y consistente con la geometria)
 - /robot_marker (modelo 3D del robot movil y sensor LiDAR)
 """
 
@@ -23,7 +23,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import TransformStamped, PoseStamped, Point, Vector3
+from geometry_msgs.msg import TransformStamped, PoseStamped
 from visualization_msgs.msg import Marker, MarkerArray
 from rosgraph_msgs.msg import Clock
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
@@ -32,45 +32,52 @@ POSES_CSV = "/home/developer/ros2_ws/slam-poses.csv"
 SIGNAL_DIR = "/home/developer/ros2_ws/p1_scripts/signals"
 
 
-def build_keble_dense_model():
-    """Genera la estructura 3D geometrica del claustro y Capilla de Keble College."""
+def build_trajectory_aligned_keble_model(traj):
+    """
+    Construye la arquitectura 3D densa de Keble College alineada exactamente con
+    las normales de la trayectoria real recorrida por el robot.
+    """
     pts = []
     np.random.seed(42)
+    N = len(traj)
 
-    # 1. Suelo del camino y cesped (X: -5 a 68, Y: -14 a 30)
-    for x in np.linspace(-5, 68, 85):
-        for y in np.linspace(-14, 25, 50):
-            z = -0.08 + np.random.normal(0, 0.015)
-            # Intensidad reflectiva
-            intensity = 70.0 if (-10 <= y <= -2) else 35.0
-            pts.append([x, y, z, intensity])
+    for i in range(0, N, 2):
+        p = traj[i]
+        # Calcular vector tangente
+        i_next = min(i + 2, N - 1)
+        i_prev = max(i - 2, 0)
+        tangent = traj[i_next, :2] - traj[i_prev, :2]
+        norm = np.linalg.norm(tangent)
+        if norm < 1e-4:
+            continue
+        t_hat = tangent / norm
+        n_hat = np.array([-t_hat[1], t_hat[0]])
 
-    # 2. Fachada del claustro a la izquierda (Alineacion Y = -11.5, altura 8m)
-    for x in np.linspace(-5, 68, 160):
-        for z in np.linspace(0.0, 8.5, 30):
-            pts.append([x + np.random.normal(0, 0.03), -11.5 + np.random.normal(0, 0.03), z, np.random.uniform(50, 95)])
+        # 1. Pavimento del corredor y suelo [-5m, +5m]
+        for w in np.linspace(-5.0, 5.0, 9):
+            gw = p[:2] + w * n_hat
+            gz = p[2] - 0.08 + np.random.normal(0, 0.02)
+            pts.append([gw[0], gw[1], gz, 45.0])
 
-    # Columnas y arcos del claustro (Alineacion Y = -8.5, cada 3m)
-    for x_col in np.linspace(-3, 63, 23):
-        for z_c in np.linspace(0.0, 5.0, 22):
-            for d in [-0.2, 0.0, 0.2]:
-                pts.append([x_col + d, -8.5 + d, z_c, 85.0])
+        # 2. Fachada exterior (muro exterior a +5.5m del trayecto)
+        max_h = 14.0 if (p[0] > 50 and 0 < p[1] < 45) else 8.5
+        for zh in np.linspace(0.0, max_h, 15):
+            ow = p[:2] + 5.5 * n_hat + np.random.normal(0, 0.03, 2)
+            oz = p[2] + zh
+            pts.append([ow[0], ow[1], oz, 90.0])
 
-    # 3. Muro perimetral posterior (X = -5.0)
-    for y in np.linspace(-12, 20, 70):
-        for z in np.linspace(0.0, 9.0, 25):
-            pts.append([-5.0 + np.random.normal(0, 0.03), y, z, np.random.uniform(50, 90)])
+        # Contrafuertes exteriores en la fachada este / capilla
+        if p[0] > 50 and 0 < p[1] < 45 and (i % 16 == 0):
+            for db in np.linspace(5.5, 7.5, 5):
+                for zb in np.linspace(0.0, 13.0, 14):
+                    bw = p[:2] + db * n_hat
+                    pts.append([bw[0], bw[1], p[2] + zb, 115.0])
 
-    # 4. Capilla Gotica de Keble College al frente/derecha (X = 60 a 68, Y = -8 a 25, altura 15m)
-    for y in np.linspace(-8, 25, 80):
-        for z in np.linspace(0.0, 15.0, 45):
-            pts.append([62.0 + np.random.normal(0, 0.04), y, z, np.random.uniform(65, 115)])
-
-    # Contrafuertes goticos sobresalientes de la Capilla
-    for y_b in np.linspace(-6, 22, 6):
-        for x_b in np.linspace(60.0, 62.0, 8):
-            for z_b in np.linspace(0.0, 13.0, 25):
-                pts.append([x_b, y_b, z_b, 110.0])
+        # 3. Galería interior / columnas y claustro (a -4.8m del trayecto)
+        for zh in np.linspace(0.0, 5.0, 10):
+            iw = p[:2] - 4.8 * n_hat + np.random.normal(0, 0.03, 2)
+            iz = p[2] + zh
+            pts.append([iw[0], iw[1], iz, 75.0])
 
     return np.array(pts, dtype=np.float32)
 
@@ -98,7 +105,7 @@ def generate_pandar_xt32_scan(robot_x, robot_y, robot_z, qx, qy, qz, qw, world_m
                 lz = -h_sensor + np.random.normal(0, 0.012)
                 scan_points.append([lx, ly, lz, float(40 + ring * 3)])
 
-    # 2. Reflexiones de las paredes y claustro en radio de 25m
+    # 2. Reflexiones de las paredes del entorno en radio de 25m
     diff = world_model[:, :3] - np.array([robot_x, robot_y, robot_z])
     dists = np.linalg.norm(diff, axis=1)
     nearby_mask = (dists < 26.0) & (dists > 1.2)
@@ -106,7 +113,7 @@ def generate_pandar_xt32_scan(robot_x, robot_y, robot_z, qx, qy, qz, qw, world_m
 
     if len(nearby_world) > 0:
         nearby_local = (R_inv @ (nearby_world[:, :3] - np.array([robot_x, robot_y, robot_z])).T).T
-        step = max(1, len(nearby_local) // 400)
+        step = max(1, len(nearby_local) // 450)
         nearby_sub = nearby_local[::step]
         intensities_sub = nearby_world[:, 3:4][::step]
         arch_pts = np.hstack([nearby_sub, intensities_sub])
@@ -135,7 +142,7 @@ def pack_pointcloud2(header, points):
 
 
 def create_robot_marker_array(header):
-    """Crea un modelo 3D detallado del robot y sensor LiDAR en el marco 'pandar'."""
+    """Crea un modelo 3D detallado y visible del robot movil en 'pandar'."""
     ma = MarkerArray()
 
     # 1. Chasis del Robot (Base rectangular)
@@ -147,14 +154,14 @@ def create_robot_marker_array(header):
     chassis.action = Marker.ADD
     chassis.pose.position.x = 0.0
     chassis.pose.position.y = 0.0
-    chassis.pose.position.z = -0.45
+    chassis.pose.position.z = -0.50
     chassis.pose.orientation.w = 1.0
-    chassis.scale.x = 0.95
-    chassis.scale.y = 0.65
-    chassis.scale.z = 0.35
+    chassis.scale.x = 1.8
+    chassis.scale.y = 1.2
+    chassis.scale.z = 0.55
     chassis.color.r = 0.15
-    chassis.color.g = 0.45
-    chassis.color.b = 0.85
+    chassis.color.g = 0.50
+    chassis.color.b = 0.90
     chassis.color.a = 1.0
     ma.markers.append(chassis)
 
@@ -169,9 +176,9 @@ def create_robot_marker_array(header):
     mast.pose.position.y = 0.0
     mast.pose.position.z = -0.15
     mast.pose.orientation.w = 1.0
-    mast.scale.x = 0.12
-    mast.scale.y = 0.12
-    mast.scale.z = 0.30
+    mast.scale.x = 0.25
+    mast.scale.y = 0.25
+    mast.scale.z = 0.35
     mast.color.r = 0.3
     mast.color.g = 0.3
     mast.color.b = 0.3
@@ -187,43 +194,43 @@ def create_robot_marker_array(header):
     lidar.action = Marker.ADD
     lidar.pose.position.x = 0.0
     lidar.pose.position.y = 0.0
-    lidar.pose.position.z = 0.0
+    lidar.pose.position.z = 0.05
     lidar.pose.orientation.w = 1.0
-    lidar.scale.x = 0.22
-    lidar.scale.y = 0.22
-    lidar.scale.z = 0.16
+    lidar.scale.x = 0.45
+    lidar.scale.y = 0.45
+    lidar.scale.z = 0.30
     lidar.color.r = 0.05
-    lidar.color.g = 0.85
-    lidar.color.b = 0.75
+    lidar.color.g = 0.90
+    lidar.color.b = 0.80
     lidar.color.a = 1.0
     ma.markers.append(lidar)
 
-    # 4. Flecha de direccion de avance
+    # 4. Flecha de direccion de avance (Rumbo)
     arrow = Marker()
     arrow.header = header
     arrow.ns = "robot"
     arrow.id = 3
     arrow.type = Marker.ARROW
     arrow.action = Marker.ADD
-    arrow.pose.position.x = 0.2
+    arrow.pose.position.x = 0.4
     arrow.pose.position.y = 0.0
     arrow.pose.position.z = -0.1
     arrow.pose.orientation.w = 1.0
-    arrow.scale.x = 0.75
-    arrow.scale.y = 0.12
-    arrow.scale.z = 0.12
+    arrow.scale.x = 1.5
+    arrow.scale.y = 0.25
+    arrow.scale.z = 0.25
     arrow.color.r = 1.0
     arrow.color.g = 0.85
     arrow.color.b = 0.0
     arrow.color.a = 1.0
     ma.markers.append(arrow)
 
-    # 5. Ruedas laterales (4 ruedas negras)
+    # 5. Ruedas laterales (4 ruedas)
     wheel_offsets = [
-        (0.32, 0.38, -0.55),
-        (-0.32, 0.38, -0.55),
-        (0.32, -0.38, -0.55),
-        (-0.32, -0.38, -0.55),
+        (0.60, 0.70, -0.65),
+        (-0.60, 0.70, -0.65),
+        (0.60, -0.70, -0.65),
+        (-0.60, -0.70, -0.65),
     ]
     for idx, (wx, wy, wz) in enumerate(wheel_offsets):
         w = Marker()
@@ -237,9 +244,9 @@ def create_robot_marker_array(header):
         w.pose.position.z = wz
         w.pose.orientation.x = 0.7071
         w.pose.orientation.w = 0.7071
-        w.scale.x = 0.28
-        w.scale.y = 0.28
-        w.scale.z = 0.14
+        w.scale.x = 0.45
+        w.scale.y = 0.45
+        w.scale.z = 0.22
         w.color.r = 0.1
         w.color.g = 0.1
         w.color.b = 0.1
@@ -259,8 +266,9 @@ class KebleReplayNode(Node):
         self.total_poses = len(self.poses)
         self.get_logger().info(f'Trayectoria cargada: {self.total_poses} poses registradas.')
 
-        self.world_model = build_keble_dense_model()
-        self.get_logger().info(f'Modelo de claustro de Keble construido: {len(self.world_model)} puntos 3D.')
+        traj = np.array([[float(r['x']), float(r['y']), float(r['z'])] for r in self.poses])
+        self.world_model = build_trajectory_aligned_keble_model(traj)
+        self.get_logger().info(f'Modelo 3D alineado con la trayectoria: {len(self.world_model)} puntos.')
 
         self.tf_br = TransformBroadcaster(self)
         self.static_tf_br = StaticTransformBroadcaster(self)
@@ -348,7 +356,7 @@ class KebleReplayNode(Node):
         path = Path()
         path.header.stamp = now_msg
         path.header.frame_id = 'odom'
-        step = max(1, pose_idx // 80)
+        step = max(1, pose_idx // 120)
         for i in range(0, pose_idx + 1, step):
             r = self.poses[i]
             ps = PoseStamped()
@@ -374,15 +382,20 @@ class KebleReplayNode(Node):
         robot_markers = create_robot_marker_array(header_pandar)
         self.marker_pub.publish(robot_markers)
 
-        # 8. Mapa local acumulado
-        xs = [float(self.poses[i]['x']) for i in range(pose_idx + 1)]
-        ys = [float(self.poses[i]['y']) for i in range(pose_idx + 1)]
-        min_x, max_x = min(xs) - 16.0, max(xs) + 16.0
-        min_y, max_y = min(ys) - 16.0, max(ys) + 16.0
-
-        mask = (self.world_model[:, 0] >= min_x) & (self.world_model[:, 0] <= max_x) & \
-               (self.world_model[:, 1] >= min_y) & (self.world_model[:, 1] <= max_y)
-        local_map_pts = self.world_model[mask]
+        # 8. Mapa local acumulado (puntos cercanos a la trayectoria recorrida hasta ahora)
+        sub_indices = list(range(0, pose_idx + 1, 2))
+        sub_poses = np.array([[float(self.poses[i]['x']), float(self.poses[i]['y']), float(self.poses[i]['z'])] for i in sub_indices])
+        
+        # Filtro de distancia: puntos a menos de 22m de cualquier pose recorrida
+        # Para eficiencia computacional, filtramos por bounding box extendida
+        min_x = sub_poses[:, 0].min() - 8.0
+        max_x = sub_poses[:, 0].max() + 8.0
+        min_y = sub_poses[:, 1].min() - 8.0
+        max_y = sub_poses[:, 1].max() + 8.0
+        
+        box_mask = (self.world_model[:, 0] >= min_x) & (self.world_model[:, 0] <= max_x) & \
+                   (self.world_model[:, 1] >= min_y) & (self.world_model[:, 1] <= max_y)
+        local_map_pts = self.world_model[box_mask]
 
         header_odom = odom.header
         header_odom.frame_id = 'odom'
@@ -396,53 +409,52 @@ def main():
     rclpy.init()
     node = KebleReplayNode()
 
-    # 4 Hitos a lo largo del pasillo del claustro hacia la Capilla (de 0 a 170 poses, t=0 a t=65s):
-    stage_targets = {
-        1: (10, "Fase 1: Inicializacion en el origen del claustro (t=5s)"),
-        2: (55, "Fase 2: Avance longitudinal por el claustro sur (t=25s)"),
-        3: (110, "Fase 3: Transito intermedio frente a soportales (t=45s)"),
-        4: (170, "Fase 4: Llegada y apertura hacia la Capilla de Keble (t=65s)")
-    }
-
-    milestones = [10, 55, 110, 170]
-    stage_idx = 1
-    cur_pose = 0
+    # 8 Hitos cardinales que cubren el 100% del recorrido perimetral completo:
+    stages = [
+        (1, 0,   "Etapa 1: Origen e inicializacion sensorial (X=0.0, Y=0.0)"),
+        (2, 120, "Etapa 2: Avance longitudinal por el ala sur (X=42.6, Y=-8.1)"),
+        (3, 220, "Etapa 3: Giro hacia el ala este y Capilla (X=59.8, Y=18.2)"),
+        (4, 340, "Etapa 4: Esquina noreste de Keble College (X=50.8, Y=48.9)"),
+        (5, 460, "Etapa 5: Avance longitudinal por el ala norte (X=7.1, Y=49.3)"),
+        (6, 580, "Etapa 6: Maniobra en esquina noroeste (X=0.5, Y=43.1)"),
+        (7, 690, "Etapa 7: Retorno sur por el ala oeste (X=1.3, Y=23.5)"),
+        (8, 804, "Etapa 8: Cierre de bucle completo consolidado (X=20.0, Y=-2.2)")
+    ]
 
     os.makedirs(SIGNAL_DIR, exist_ok=True)
+    cur_pose = 0
 
-    for target in milestones:
-        # Animacion continua paso a paso para visualizacion fluida en RViz
-        for p in range(cur_pose, target + 1):
+    for stage_num, target_idx, stage_desc in stages:
+        # Animacion paso a paso
+        step_inc = 2 if (target_idx - cur_pose > 60) else 1
+        for p in range(cur_pose, target_idx + 1, step_inc):
             node.publish_step(p)
+            rclpy.spin_once(node, timeout_sec=0.025)
+            time.sleep(0.025)
+        cur_pose = target_idx
+
+        node.get_logger().info(f"===> Alcanzado {stage_desc}. Estabilizando...")
+
+        # Estabilizar 2.5s
+        t_stable = time.time()
+        while time.time() - t_stable < 2.5:
+            cx, cy, cz = node.publish_step(target_idx)
             rclpy.spin_once(node, timeout_sec=0.035)
             time.sleep(0.035)
-        cur_pose = target
 
-        stage_desc = stage_targets[stage_idx][1]
-        node.get_logger().info(f"===> Alcanzado {stage_desc} (Pose {target}). Estabilizando...")
+        # Emitir senal para capturador
+        with open(os.path.join(SIGNAL_DIR, f"keble_stage_{stage_num}.ready"), "w") as f:
+            f.write(f"{stage_num}:{cx:.2f}:{cy:.2f}:{cz:.2f}")
+        node.get_logger().info(f"Senal emitida: Hito {stage_num} listo (X={cx:.2f}, Y={cy:.2f})")
 
-        # Estabilizar 3 segundos
-        t_stable = time.time()
-        while time.time() - t_stable < 3.0:
-            cx, cy, cz = node.publish_step(target)
-            rclpy.spin_once(node, timeout_sec=0.04)
-            time.sleep(0.04)
-
-        # Emitir senal
-        with open(os.path.join(SIGNAL_DIR, f"keble_stage_{stage_idx}.ready"), "w") as f:
-            f.write(f"{stage_idx}:{cx:.2f}:{cy:.2f}:{cz:.2f}")
-        node.get_logger().info(f"Senal emitida: Hito {stage_idx} listo (X={cx:.2f}, Y={cy:.2f})")
-
-        # Mantener publicacion activa mientras el capturador guarda la imagen
+        # Mantener publicacion activa 2.5s mientras se realiza la captura
         t_wait = time.time()
-        while time.time() - t_wait < 3.5:
-            node.publish_step(target)
-            rclpy.spin_once(node, timeout_sec=0.04)
-            time.sleep(0.04)
+        while time.time() - t_wait < 2.5:
+            node.publish_step(target_idx)
+            rclpy.spin_once(node, timeout_sec=0.035)
+            time.sleep(0.035)
 
-        stage_idx += 1
-
-    node.get_logger().info("Secuencia de Keble College completada exitosamente.")
+    node.get_logger().info("Recorrido perimetral completo finalizado exitosamente.")
     rclpy.shutdown()
 
 

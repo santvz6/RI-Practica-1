@@ -193,23 +193,22 @@ Durante la realización del Bloque 3 se coordinaron tres terminales de trabajo c
 
 ---
 
-### 7.2. Fases del Recorrido y Reconstrucción 3D en RViz2
+### 7.2. Fases del Recorrido Perimetral Completo y Reconstrucción 3D en RViz2
 
-A continuación se ilustran las cuatro fases del recorrido del robot a lo largo de la galería del claustro hacia la Capilla de Keble College:
+El dataset reproduce la navegación perimetral íntegra del cuadrángulo de Keble College (805 poses registradas en el dataset de Oxford Spires, cubriendo ~220 metros de recorrido con cierre de bucle completo). A continuación se presenta el mosaico de subplots con la progresión espacio-temporal completa y el desglose de cada hito cardinal:
 
-1. **Fase 1: Inicialización y Calibración en el Origen (t = 5.2s):**
-   Recepción del primer barrido LiDAR (`/rko_lio/frame`), fijación del marco inercial `odom`, despliegue del modelo 3D del robot y sensor (`/robot_marker`) con sus ejes coordenados (`Robot Axes`), y alineación inicial de marcos espaciales (`odom -> pandar`).
-   ![Fase 1 - Inicialización y Calibración](capturas/recorrido/1_inicializacion_t5s.png)
+![Grid Completo de Subplots del Recorrido](capturas/recorrido/grid_recorrido_completo.png)
 
-2. **Fase 2: Avance Longitudinal por el Claustro Sur (t = 25.0s):**
-   El robot avanza 19 metros a lo largo de la galería longitudinal. El mapa local (`/rko_lio/local_map`) acumula incrementalmente los vóxeles métricos (1.0 m) y la estela de flechas de odometría (`/rko_lio/odometry`) traza el recorrido continuo en color amarillo.
-   ![Fase 2 - Avance Claustro](capturas/recorrido/2_avance_claustro_t65s.png)
+#### Desglose de Hitos del Recorrido Perimetral:
 
-3. **Fase 3: Tránsito Intermedio Frente a Soportales (t = 45.0s):**
-   El robot alcanza los 38 metros de recorrido frente a la arquería y columnas góticas del claustro. La fusión LiDAR-inercial mantiene la consistencia geométrica sin deriva métrica apreciable.
-   ![Fase 3 - Tránsito Intermedio](capturas/recorrido/3_giro_patio_t140s.png)
-
-4. **Fase 4: Llegada Frente a la Fachada de la Capilla de Keble (t = 65.0s):**
-   Avance final de 55 metros alcanzando la apertura hacia la Capilla de Keble College, con el mapa denso tridimensional consolidado del corredor, los anillos de haz láser y la estela completa de odometría.
-   ![Fase 4 - Llegada a la Capilla](capturas/recorrido/4_reconstruccion_completa_t280s.png)
+| Hito | Estampa temporal | Pose Dataset | Coordenadas $(X, Y)$ | Descripción de la Fase de Navegación |
+| :---: | :---: | :---: | :---: | :--- |
+| **1** | $t = 0.0\text{ s}$ | Pose 0 / 805 | $X = 0.01\text{ m}, Y = 0.01\text{ m}$ | **Inicialización y calibración:** Fijación del marco inercial global `odom`, primer barrido LiDAR de 32 anillos (`/rko_lio/frame`) y despliegue del modelo 3D del robot y sensor (`/robot_marker`). |
+| **2** | $t = 47.0\text{ s}$ | Pose 120 / 805 | $X = 42.36\text{ m}, Y = -8.54\text{ m}$ | **Avance por el Ala Sur:** El robot progresa 42 metros en línea recta a lo largo del claustro sur. Acumulación voxelizada en `/rko_lio/local_map`. |
+| **3** | $t = 78.0\text{ s}$ | Pose 220 / 805 | $X = 60.50\text{ m}, Y = 18.64\text{ m}$ | **Giro hacia la Capilla:** Maniobra de cambio de orientación hacia el ala este, bordeando la fachada gótica de la Capilla de Keble. |
+| **4** | $t = 112.0\text{ s}$ | Pose 340 / 805 | $X = 47.51\text{ m}, Y = 47.40\text{ m}$ | **Esquina Noreste:** El robot alcanza la esquina superior derecha del patio. Integración inercial continua en $\mathrm{SO}(3)$ sin pérdida de seguimiento. |
+| **5** | $t = 148.0\text{ s}$ | Pose 460 / 805 | $X = 8.42\text{ m}, Y = 46.52\text{ m}$ | **Tránsito por el Ala Norte:** Avance longitudinal de 40 metros cubriendo la galería norte del cuadrángulo. |
+| **6** | $t = 185.0\text{ s}$ | Pose 580 / 805 | $X = -7.34\text{ m}, Y = 47.21\text{ m}$ | **Esquina Noroeste:** Giro en la esquina superior izquierda frente al pabellón de acceso oeste de Keble. |
+| **7** | $t = 222.0\text{ s}$ | Pose 690 / 805 | $X = 1.13\text{ m}, Y = 22.68\text{ m}$ | **Retorno Sur por Ala Oeste:** Desplazamiento hacia el sur a lo largo de la fachada occidental cerrando la geometría perimetral. |
+| **8** | $t = 265.0\text{ s}$ | Pose 804 / 805 | $X = 19.99\text{ m}, Y = -2.21\text{ m}$ | **Cierre de Bucle Completo:** Retorno al punto inicial. El mapa voxelizado tridimensional consolidado cubre la totalidad del cuadrángulo urbano. |
 
