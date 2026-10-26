@@ -28,7 +28,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import PoseStamped, Point, Quaternion
+from geometry_msgs.msg import PoseStamped, Point, Quaternion, Pose
 from control_msgs.action import FollowJointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
@@ -71,6 +71,12 @@ class UR3eGoalSender(Node):
         'wrist_2_joint',
         'wrist_3_joint',
     ]
+
+    NAMED_TARGETS = {
+        'home': [0.0, -1.5707, 0.0, 0.0, 0.0, 0.0],
+        'up': [0.0, -1.5707, 0.0, -1.5707, 0.0, 0.0],
+        'test_configuration': [1.54, -1.62, 1.4, -1.2, -1.6, -0.11]
+    }
 
     def __init__(self):
         super().__init__('ur3e_goal_sender_node')
@@ -132,7 +138,7 @@ class UR3eGoalSender(Node):
             return False
 
         goal_msg = MoveGroup.Goal()
-        goal_msg.request.group_name = 'ur3e_arm'
+        goal_msg.request.group_name = 'ur_manipulator'
         goal_msg.request.num_planning_attempts = 10
         goal_msg.request.allowed_planning_time = 5.0
         goal_msg.request.max_velocity_scaling_factor = 0.5
@@ -146,11 +152,10 @@ class UR3eGoalSender(Node):
         primitive.type = SolidPrimitive.SPHERE
         primitive.dimensions = [0.01]  # Tolerancia 1 cm
         pos_constraint.constraint_region.primitives.append(primitive)
-        pos_constraint.constraint_region.primitive_poses.append(
-            PoseStamped(
-                pose=Point(x=x, y=y, z=z)
-            ).pose
-        )
+        target_pose = Pose()
+        target_pose.position = Point(x=float(x), y=float(y), z=float(z))
+        target_pose.orientation.w = 1.0
+        pos_constraint.constraint_region.primitive_poses.append(target_pose)
         pos_constraint.weight = 1.0
 
         # Restricción de orientación
@@ -207,7 +212,8 @@ class UR3eGoalSender(Node):
 
 def main():
     parser = argparse.ArgumentParser(description='Controlador por código Python para brazo robótico UR3e en ROS 2.')
-    parser.add_argument('--mode', type=str, choices=['joint', 'cartesian'], default='joint', help='Modo de control (joint o cartesian)')
+    parser.add_argument('--mode', type=str, choices=['joint', 'cartesian', 'named'], default='joint', help='Modo de control (joint, cartesian o named)')
+    parser.add_argument('--named', type=str, choices=['home', 'up', 'test_configuration'], default='home', help='Nombre de pose predefinida en SRDF')
     parser.add_argument('--joints', nargs=6, type=float, default=[0.0, -1.57, 1.57, -1.57, -1.57, 0.0], help='6 ángulos articulares en radianes')
     parser.add_argument('--x', type=float, default=0.25, help='X cartesiano (m)')
     parser.add_argument('--y', type=float, default=0.15, help='Y cartesiano (m)')
@@ -223,6 +229,10 @@ def main():
 
     if args.mode == 'joint':
         node.send_joint_trajectory(args.joints, duration_sec=args.duration)
+    elif args.mode == 'named':
+        angles = node.NAMED_TARGETS[args.named]
+        node.get_logger().info(f'Ejecutando pose predefinida: {args.named} -> {angles}')
+        node.send_joint_trajectory(angles, duration_sec=args.duration)
     else:
         node.send_moveit_cartesian_goal(args.x, args.y, args.z, args.roll, args.pitch, args.yaw)
 

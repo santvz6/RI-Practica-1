@@ -1,0 +1,126 @@
+digraph rqt_graph_ur3e {
+    rankdir=LR;
+    fontname="Helvetica";
+    compound=true;
+
+    // Estilos generales
+    node [shape=box, style="filled,rounded", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+
+    // ==========================================
+    // CAPA 1: Simulación Física (Gazebo Harmonic)
+    // ==========================================
+    subgraph cluster_gazebo {
+        label = "Simulador Físico (Gazebo Harmonic)";
+        style = "filled";
+        color = "#e06666";
+        fillcolor = "#fce5cd";
+
+        gz_sim [label="/gz_sim\n(Gazebo Harmonic - empty world)\n[Simulación Dinámica & Colisiones]", fillcolor="#f9cb9c"];
+        ros_gz_bridge [label="/ros_gz_bridge\n(Puente de Transporte GZ <-> ROS 2)", fillcolor="#f9cb9c"];
+    }
+
+    // ==========================================
+    // CAPA 2: Control y Abstracción de Hardware
+    // ==========================================
+    subgraph cluster_control {
+        label = "Capa de Control (ros2_control)";
+        style = "filled";
+        color = "#e69138";
+        fillcolor = "#fff2cc";
+
+        gz_ros_control [label="/gz_ros_control\n(Plugin Hardware GZ / UR3e)", fillcolor="#ffe599"];
+        controller_manager [label="/controller_manager\n(Gestor de Ciclo de Vida)", fillcolor="#ffe599"];
+        joint_state_broadcaster [label="/joint_state_broadcaster\n(Lector de Encoders)", fillcolor="#ffe599"];
+        scaled_joint_trajectory_controller [label="/scaled_joint_trajectory_controller\n(Controlador de Trayectoria Articular\ncon Escalado de Velocidad)", fillcolor="#ffe599"];
+        robot_state_publisher [label="/robot_state_publisher\n(Cinemática Directa URDF)", fillcolor="#ffe599"];
+    }
+
+    // ==========================================
+    // CAPA 3: Planificación y Cinemática (MoveIt 2)
+    // ==========================================
+    subgraph cluster_moveit {
+        label = "Cerebro de Planificación y Cinemática (MoveIt 2)";
+        style = "filled";
+        color = "#3d85c6";
+        fillcolor = "#cfe2f3";
+
+        move_group [label="/move_group\n(Motor Cinemático & Planificador OMPL)\n[RRTConnect / Cinemática Inversa IK]", fillcolor="#9fc5e8"];
+        moveit_controller_manager [label="/moveit_simple_controller_manager\n(Adaptador de Ejecución)", fillcolor="#9fc5e8"];
+    }
+
+    // ==========================================
+    // CAPA 4: Interfaz de Usuario y Clientes
+    // ==========================================
+    subgraph cluster_ui {
+        label = "Interfaces de Usuario y Control Programático";
+        style = "filled";
+        color = "#6aa84f";
+        fillcolor = "#d9ead3";
+
+        rviz2_moveit [label="/rviz2_moveit\n(Visualizador 3D RViz2)\n[MotionPlanning Panel & Interactive Marker]", fillcolor="#b6d7a8"];
+        ur3e_script [label="ur3e_send_pose.py\n(Script Python de Control - Opcional 2)\n[Modo Articular / Modo Cartesiano]", fillcolor="#b6d7a8"];
+    }
+
+    // ==========================================
+    // TÓPICOS Y ACCIONES (Nodos intermedios)
+    // ==========================================
+    node [shape=ellipse, style="filled", fontsize=9];
+
+    // Tópicos sensoriales / estado
+    topic_clock [label="/clock\n[rosgraph_msgs/Clock]", fillcolor="#ffffff", color="#666666"];
+    topic_joint_states [label="/joint_states\n[sensor_msgs/JointState]", fillcolor="#d9ead3", color="#38761d"];
+    topic_tf [label="/tf & /tf_static\n[tf2_msgs/TFMessage]", fillcolor="#d9ead3", color="#38761d"];
+    topic_planning_scene [label="/monitored_planning_scene\n[moveit_msgs/PlanningScene]", fillcolor="#cfe2f3", color="#0b5394"];
+    topic_display_path [label="/display_planned_path\n[moveit_msgs/DisplayTrajectory]", fillcolor="#cfe2f3", color="#0b5394"];
+    topic_marker_feedback [label="/rviz_.../feedback\n[visualization_msgs/InteractiveMarkerFeedback]", fillcolor="#d9ead3", color="#38761d"];
+
+    // Acciones de control y planificación
+    action_move_group [label="/move_action\n[moveit_msgs/action/MoveGroup]", fillcolor="#b4a7d6", color="#351c75", shape=box3d];
+    action_follow_joint [label="/scaled_joint_trajectory_controller/follow_joint_trajectory\n[control_msgs/action/FollowJointTrajectory]", fillcolor="#f4cccc", color="#990000", shape=box3d];
+
+    // ==========================================
+    // CONEXIONES DE FLUJO
+    // ==========================================
+
+    // Sincronización temporal
+    gz_sim -> ros_gz_bridge [label="gz transport"];
+    ros_gz_bridge -> topic_clock;
+    topic_clock -> move_group;
+    topic_clock -> rviz2_moveit;
+    topic_clock -> controller_manager;
+
+    // Gazebo <-> ros2_control
+    gz_sim -> gz_ros_control [label="Física / Estados Articulares"];
+    gz_ros_control -> controller_manager;
+    controller_manager -> joint_state_broadcaster;
+    joint_state_broadcaster -> topic_joint_states;
+    topic_joint_states -> robot_state_publisher;
+    topic_joint_states -> move_group;
+    robot_state_publisher -> topic_tf;
+    topic_tf -> rviz2_moveit;
+    topic_tf -> move_group;
+
+    // MoveIt 2 y Escena de Planificación
+    move_group -> topic_planning_scene;
+    topic_planning_scene -> rviz2_moveit;
+    move_group -> topic_display_path;
+    topic_display_path -> rviz2_moveit;
+
+    // RViz Interactive Marker -> MoveIt
+    rviz2_moveit -> topic_marker_feedback;
+    topic_marker_feedback -> move_group;
+    rviz2_moveit -> action_move_group [label="Plan & Execute (GUI)"];
+
+    // Script Python -> MoveIt / ros2_control
+    ur3e_script -> action_move_group [label="Modo Cartesiano (Pose Goal)"];
+    ur3e_script -> action_follow_joint [label="Modo Articular (Joint Goal)"];
+
+    // MoveIt -> ros2_control execution
+    action_move_group -> move_group;
+    move_group -> moveit_controller_manager [label="Trajectory Dispatch"];
+    moveit_controller_manager -> action_follow_joint;
+    action_follow_joint -> scaled_joint_trajectory_controller;
+    scaled_joint_trajectory_controller -> gz_ros_control [label="Comandos de Torque / Velocidad"];
+    gz_ros_control -> gz_sim [label="Actuación Servomotores (Física DART)"];
+}

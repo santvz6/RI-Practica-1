@@ -159,19 +159,36 @@ docker exec -it --user developer robotica_inteligente_grado bash -c \
 ### Terminal 1: Simulación Unificada (Gazebo + MoveIt 2 + RViz)
 ```bash
 docker exec -it --user developer robotica_inteligente_grado bash -c \
-  "source /opt/ros/jazzy/setup.bash && ros2 launch ur_simulation_gz ur_sim_moveit.launch.py ur_type:=ur3e use_sim_time:=true"
+  "source /opt/ros/jazzy/setup.bash && ros2 launch ur_simulation_gz ur_sim_moveit.launch.py ur_type:=ur3e"
 ```
 
 ### Control Programático de Poses (Opcional 2)
 ```bash
-# Modo articular:
+# Modo articular específico:
 docker exec -it --user developer robotica_inteligente_grado bash -c \
   "source /opt/ros/jazzy/setup.bash && python3 /home/developer/ros2_ws/p1_scripts/ur3e_send_pose.py --mode joint --joints 0.0 -1.57 1.57 -1.57 -1.57 0.0"
 
-# Modo cartesiano:
+# Modo cartesiano 3D (cinemática inversa + OMPL):
 docker exec -it --user developer robotica_inteligente_grado bash -c \
   "source /opt/ros/jazzy/setup.bash && python3 /home/developer/ros2_ws/p1_scripts/ur3e_send_pose.py --mode cartesian --x 0.25 --y 0.15 --z 0.35"
+
+# Modo poses predefinidas en SRDF (home, up, test_configuration):
+docker exec -it --user developer robotica_inteligente_grado bash -c \
+  "source /opt/ros/jazzy/setup.bash && python3 /home/developer/ros2_ws/p1_scripts/ur3e_send_pose.py --mode named --named home"
 ```
+
+### Introspección del Sistema y Extracción de Diagramas
+```bash
+# Extraer árbol de transformaciones cinemáticas TF:
+docker exec -it --user developer robotica_inteligente_grado bash -c \
+  "source /opt/ros/jazzy/setup.bash && ros2 run tf2_tools view_frames"
+
+# Visualizar grafo dinámico de nodos y acciones:
+docker exec -it --user developer robotica_inteligente_grado bash -c \
+  "source /opt/ros/jazzy/setup.bash && ros2 run rqt_graph rqt_graph"
+```
+
+> Consulta el informe detallado del Bloque 4 en [reporte_ur3e_moveit_pipeline.md](memoria/reporte_ur3e_moveit_pipeline.md).
 
 ---
 

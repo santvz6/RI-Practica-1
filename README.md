@@ -31,9 +31,16 @@ Despliegue y análisis de un entorno de robótica sobre **ROS 2 (Jazzy Jalisco)*
 │   ├── frames_rko_lio.gv
 │   ├── frames_rko_lio.pdf
 │   ├── frames_rko_lio.png
+│   ├── frames_ur3e.gv
+│   ├── frames_ur3e.pdf
+│   ├── frames_ur3e.png
 │   ├── rqt_graph_rko_lio.gv
 │   ├── rqt_graph_rko_lio.pdf
-│   └── rqt_graph_rko_lio.png
+│   ├── rqt_graph_rko_lio.png
+│   ├── rqt_graph_ur3e.gv
+│   ├── rqt_graph_ur3e.pdf
+│   ├── rqt_graph_ur3e.png
+│   └── rqt_graph_ur3e_live.png
 ├── enunciado/                  # Guiones oficiales de la práctica
 │   ├── P1-guion.pdf
 │   └── P1-introducción-prácticas.pdf
@@ -41,10 +48,20 @@ Despliegue y análisis de un entorno de robótica sobre **ROS 2 (Jazzy Jalisco)*
 │   ├── mapa_laboratorio.pgm
 │   └── mapa_laboratorio.yaml
 ├── memoria/                    # Documentación técnica, análisis e informes
+│   ├── capturas/               # Evidencias visuales de simulación, terminales y poses
+│   │   ├── recorrido/          # Subplots y etapas del Oxford Spires Dataset
+│   │   ├── terminales/         # Terminales Ubuntu y master workspace de Bloque 3 y 4
+│   │   └── ur3e/               # Galería de poses y simulación Gazebo/RViz2 del UR3e
 │   ├── reporte_nav2_pipeline.md
-│   └── reporte_rko_lio_pipeline.md
+│   ├── reporte_rko_lio_pipeline.md
+│   └── reporte_ur3e_moveit_pipeline.md
 └── scripts/                    # Scripts Python de soporte e interacción ROS 2
+    ├── capture_runner.sh       # Script de automatización de capturas
+    ├── generate_grid_poses_ur3e.py # Generador de figura multipanel de poses del UR3e
+    ├── generate_grid_subplots.py   # Generador de grid del recorrido LIO
+    ├── generate_terminal_captures_b4.py # Renderizador de terminales y workspace B4
     ├── inspect_pipeline.py     # Inspección de nodos, tópicos y tipos del middleware
+    ├── keble_real_player.py    # Reproductor controlado para dataset LIO
     ├── nav2_send_goal.py       # Envío programático de objetivos a Nav2 (Opcional 1)
     ├── ur3e_send_pose.py       # Control cartesiano y articular del brazo UR3e (Opcional 2)
     └── warehouse_mapper.py     # Script de apoyo para mapeo del almacén
