@@ -52,8 +52,13 @@ class Nav2GoalSender(Node):
     """Nodo cliente de acción de ROS 2 para la navegación autónoma con Nav2."""
 
     def __init__(self):
-        super().__init__('nav2_goal_sender_node')
-        self.get_logger().info('Inicializando cliente de navegación autónoma Nav2...')
+        super().__init__(
+            'nav2_goal_sender_node',
+            parameter_overrides=[
+                rclpy.parameter.Parameter('use_sim_time', rclpy.Parameter.Type.BOOL, True)
+            ]
+        )
+        self.get_logger().info('Inicializando cliente de navegación autónoma Nav2 (use_sim_time=True)...')
 
         self._action_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
         self._goal_handle = None
@@ -71,6 +76,10 @@ class Nav2GoalSender(Node):
                 'Verifique que Nav2 esté ejecutándose.'
             )
             return False
+
+        # Asegurar sincronización con el reloj de simulación
+        while rclpy.ok() and self.get_clock().now().nanoseconds == 0:
+            rclpy.spin_once(self, timeout_sec=0.1)
 
         # Construir el mensaje PoseStamped objetivo
         goal_msg = NavigateToPose.Goal()
@@ -143,9 +152,9 @@ def main():
     parser.add_argument('--y', type=float, required=True, help='Coordenada Y en metros')
     parser.add_argument('--yaw', type=float, default=0.0, help='Orientación deseada (grados). Por defecto 0.0')
     parser.add_argument('--frame', type=str, default='map', help='Sistema de referencia (defecto: map)')
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
-    rclpy.init()
+    rclpy.init(args=sys.argv)
     node = Nav2GoalSender()
 
     if not node.send_goal(x=args.x, y=args.y, yaw_deg=args.yaw, frame_id=args.frame):

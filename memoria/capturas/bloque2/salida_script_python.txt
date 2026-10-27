@@ -1,0 +1,11 @@
+(base) developer@santvz6-IdeaPad-Gaming-3-15ACH6:~/ros2_ws$ python3 /home/developer/ros2_ws/p1_scripts/nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
+[INFO] [1793125756.944725654] [nav2_goal_sender_node]: Inicializando cliente de navegación autónoma Nav2 (use_sim_time=True)...
+[INFO] [1793125757.072775391] [nav2_goal_sender_node]: Conectando con el servidor de acción "navigate_to_pose"...
+[INFO] [1793125760.085277998] [nav2_goal_sender_node]: Enviando objetivo -> X: 1.50 m, Y: -0.50 m, Yaw: 90.0° (1.57 rad) en frame "map"
+[INFO] [1793125760.088625154] [nav2_goal_sender_node]: Objetivo ACEPTADO por Nav2. Iniciando ejecución de trayectoria...
+[Nav2 Feedback] Distancia restante:  1.60 m | Tiempo:   0.0 s | Recuperaciones: 0
+[Nav2 Feedback] Distancia restante:  1.42 m | Tiempo:   7.3 s | Recuperaciones: 0
+[Nav2 Feedback] Distancia restante:  1.17 m | Tiempo:  21.0 s | Recuperaciones: 3
+[Nav2 Feedback] Distancia restante:  0.86 m | Tiempo:  46.7 s | Recuperaciones: 5
+[Nav2 Feedback] Distancia restante:  0.22 m | Tiempo:  51.7 s | Recuperaciones: 5
+[INFO] [1793125835.159251321] [nav2_goal_sender_node]: ¡ÉXITO! El TurtleBot 4 ha alcanzado la pose objetivo en 75.07 s.

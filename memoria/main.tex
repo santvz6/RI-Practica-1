@@ -72,7 +72,7 @@
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
 \setlength{\intextsep}{8pt plus 2pt minus 2pt}
 
-\graphicspath{{capturas/bloque4/}{../diagramas/}}
+\graphicspath{{capturas/bloque2/}{capturas/bloque4/}{../diagramas/}{diagramas/}}
 
 % =============================================================================
 % INICIO DEL DOCUMENTO
@@ -136,7 +136,7 @@ Toda la suite de desarrollo opera encapsulada sobre un contenedor persistente de
 De acuerdo con las directrices de la guía docente, la práctica se estructura en cuatro bloques secuenciales:
 \begin{itemize}
     \item \textbf{Bloque 1 -- Fundamentos de ROS 2:} Dominio de la arquitectura orientada a grafos de nodos, canales asíncronos (tópicos), llamadas síncronas (servicios) y tareas continuas con retroalimentación (acciones).
-    \item \textbf{Bloque 2 -- Mapeo y Navegación Autónoma (Nav2):} Generación de mapas de ocupación 2D mediante \textit{SLAM Toolbox} y control de plataforma móvil diferencial \textit{TurtleBot 4} empleando filtros de partículas (AMCL) y controladores predictivos MPPI. \textit{[Desarrollo documentado en anexo correspondiente]}.
+    \item \textbf{Bloque 2 -- Mapeo y Navegación Autónoma (Nav2):} Generación de mapas de ocupación 2D mediante SLAM, localización probabilística con filtros de partículas (AMCL) y control de plataforma móvil diferencial \textit{TurtleBot 4} empleando la pila \textit{Nav2}.
     \item \textbf{Bloque 3 -- Odometría LiDAR-Inercial (LIO) con Datos Reales:} Procesamiento sensorial denso sobre secuencias reales del \textit{Oxford Spires Dataset} (Keble College) mediante el pipeline \textit{RKO-LIO}. \textit{[Desarrollo documentado en anexo correspondiente]}.
     \item \textbf{Bloque 4 -- Manipulación Robótica (MoveIt 2):} Control cinemático cartesiano y articular del brazo industrial \textit{Universal Robots UR3e} (6 DOF) en simulación dinámica y planificación libre de colisiones.
 \end{itemize}
@@ -144,7 +144,278 @@ De acuerdo con las directrices de la guía docente, la práctica se estructura e
 \vspace{1em}
 
 % ---------------------------
-% 2. DESARROLLO DEL BLOQUE 4: MANIPULACIÓN ROBÓTICA (UR3e + MOVEIT 2)
+% 2. DESARROLLO DEL BLOQUE 2: MAPEO Y NAVEGACIÓN AUTÓNOMA (TURTLEBOT 4 + NAV2)
+% ---------------------------
+\section{Bloque 2 -- Mapeo y Navegación Autónoma con TurtleBot 4 y Nav2}
+
+\subsection{Contexto y Plataforma Móvil Diferencial}
+
+En este bloque abordamos el problema clásico de la robótica móvil: cómo un robot autónomo puede explorar un entorno desconocido, construir un mapa digital de ocupación, ubicarse con precisión dentro de él y desplazarse de un punto a otro de forma completamente autónoma sorteando obstáculos estáticos y dinámicos.
+
+La plataforma utilizada es el \textbf{TurtleBot 4}, un robot móvil de tracción diferencial estándar en investigación educativa que integra:
+\begin{itemize}
+    \item \textbf{Base motriz diferencial (iRobot Create 3):} Dos ruedas motrices independientes y dos ruedas locas de apoyo, equipada con encoders ópticos en cada rueda para el cálculo de la odometría cinemática y sensores de contacto (\textit{bumpers}).
+    \item \textbf{Sensor LiDAR 2D (RPLIDAR):} Escáner láser montado en la parte superior del chasis que proporciona barridos de 360 grados en el plano horizontal a través del tópico \texttt{/scan}, permitiendo detectar paredes y obstáculos en un radio de hasta 12 metros.
+    \item \textbf{Cámara RGB-D estéreo (OAK-D-PRO):} Módulo de visión espacial para percepción de profundidad tridimensional.
+\end{itemize}
+
+Todo el sistema opera simulado en \textbf{Gazebo Harmonic}, sincronizado mediante el reloj de simulación de ROS 2 (\texttt{/clock}) y coordinado a través del middleware ROS 2 Jazzy.
+
+\subsection{Mapeo del Entorno con SLAM y Teleoperación}
+
+Para que un robot navegue de forma global, necesita conocer previamente la geometría del espacio. Dado que partimos de un entorno desconocido, recurrimos al paradigma \textbf{SLAM} (\textit{Simultaneous Localization and Mapping}), donde el robot estima simultáneamente su propia trayectoria y construye el mapa del entorno.
+
+\subsubsection{Despliegue y Exploración Manual}
+El proceso de mapeo se estructuró en los siguientes pasos:
+\begin{enumerate}
+    \item \textbf{Arranque del simulador:} Se cargó el mundo virtual de laboratorio con el TurtleBot 4 mediante:
+\begin{lstlisting}[language=bash]
+ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py model:=standard rviz2:=false
+\end{lstlisting}
+    \item \textbf{Lanzamiento del algoritmo SLAM:} Se ejecutó el nodo de mapeo (\texttt{slam\_toolbox} / Cartographer):
+\begin{lstlisting}[language=bash]
+ros2 launch turtlebot4_navigation slam.launch.py
+\end{lstlisting}
+    \item \textbf{Teleoperación por teclado:} Para cubrir todas las estanterías y pasillos del laboratorio, se utilizó el nodo \texttt{teleop\_twist\_keyboard}, enviando comandos de velocidad angular y lineal (\texttt{TwistStamped}) a través de la interfaz de control:
+\begin{lstlisting}[language=bash]
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r /cmd_vel:=/cmd_vel_unstamped
+\end{lstlisting}
+    \item \textbf{Almacenamiento del mapa:} Una vez recorrido todo el entorno y cerrado el lazo del mapa en RViz2, se exportó la rejilla de ocupación 2D generada mediante la herramienta \texttt{nav2\_map\_server}:
+\begin{lstlisting}[language=bash]
+ros2 run nav2_map_server map_saver_cli -f /home/developer/ros2_ws/mapa_laboratorio
+\end{lstlisting}
+    Este comando produjo dos ficheros: \texttt{mapa\_laboratorio.pgm} (imagen rasterizada en escala de grises donde el negro representa obstáculos, el blanco espacio libre y el gris celdas desconocidas) y \texttt{mapa\_laboratorio.yaml} (metadatos con resolución de 0.03\,m/celda y punto de origen).
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_01_gazebo.png}
+        \caption{TurtleBot 4 en Gazebo Harmonic.}
+        \label{fig:b2_gazebo}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_02_slam.png}
+        \caption{Lanzamiento del nodo SLAM.}
+        \label{fig:b2_slam_node}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_03_rviz_slam.png}
+        \caption{Construcción del mapa en RViz2.}
+        \label{fig:b2_rviz_slam}
+    \end{subfigure}
+    \\[6pt]
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_04_teleop.png}
+        \caption{Teleoperación manual con teclado.}
+        \label{fig:b2_teleop}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_05_slam_dual.png}
+        \caption{Inspección combinada Gazebo + RViz2 durante el mapeo.}
+        \label{fig:b2_slam_dual}
+    \end{subfigure}
+    \caption{Secuencia experimental completa de la fase de Mapeo (SLAM): despliegue en simulación, exploración guiada por teleoperación y generación de la rejilla de ocupación 2D.}
+    \label{fig:grid_slam}
+\end{figure}
+
+\subsection{Localización Basada en Mapa con Filtro de Partículas (AMCL)}
+
+Una vez generado el mapa estático, el robot ya no necesita calcular SLAM (proceso computacionalmente costoso), sino que pasa a utilizar el algoritmo \textbf{AMCL} (\textit{Adaptive Monte Carlo Localization}).
+
+AMCL es un filtro de partículas que estima la posición y orientación del robot $(x, y, \theta)$ en el mapa comparando en tiempo real las lecturas del escáner láser (\texttt{/scan}) con las paredes y obstáculos de la rejilla de ocupación:
+\begin{enumerate}
+    \item \textbf{Carga del mapa (\texttt{map\_server}):} El nodo \texttt{map\_server} publica el mapa estático en el tópico \texttt{/map} con durabilidad \textit{transient local}.
+    \item \textbf{Pose Inicial (\textit{2D Pose Estimate}):} Dado que el filtro de partículas necesita una hipótesis de partida, se proporciona una estimación aproximada mediante la herramienta interactiva de RViz2 (o publicando en el tópico \texttt{/initialpose}).
+    \item \textbf{Convergencia de partículas:} AMCL genera una nube de hipótesis representadas mediante flechas verdes (\texttt{/particle\_cloud}). Conforme el robot recibe nuevas lecturas LiDAR y se desplaza, las partículas que coinciden con la geometría del entorno aumentan su peso probabilístico y las demás desaparecen, haciendo que la nube colapse sobre la posición real del vehículo.
+    \item \textbf{Corrección de la odometría:} Con la pose estimada, AMCL publica continuamente la transformación dinámica \texttt{map -> odom}, corrigiendo en tiempo real la deriva acumulada por el deslizamiento de las ruedas en la odometría.
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_06_amcl_map.png}
+        \caption{Lanzamiento de \texttt{map\_server} y AMCL.}
+        \label{fig:b2_amcl_terminal}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_08_rviz_map.png}
+        \caption{Mapa estático cargado en RViz2.}
+        \label{fig:b2_rviz_map}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_09_amcl_costmap.png}
+        \caption{Pose estimada y capas de \textit{costmap}.}
+        \label{fig:b2_costmap_init}
+    \end{subfigure}
+    \caption{Fase de localización probabilística: servicio de mapas, inyección de pose inicial en RViz2 y activación de las capas de coste global.}
+    \label{fig:grid_amcl}
+\end{figure}
+
+\subsection{Pila de Navegación Nav2 y Planificación de Trayectorias}
+
+Con el robot correctamente localizado en el mapa, se activa la pila de navegación autónoma \textbf{Nav2} (\texttt{nav2.launch.py}). Nav2 se estructura en una arquitectura modular gobernada por un Árbol de Comportamiento (\textit{Behavior Tree}):
+
+\subsubsection{Mapas de Coste (Costmaps 2D)}
+Para navegar con seguridad, Nav2 mantiene dos representaciones espaciales basadas en celdas de coste (donde 0 representa espacio libre, 254 obstáculo letal y los valores intermedios zonas de precaución):
+\begin{itemize}
+    \item \textbf{Global Costmap:} Abarca todo el mapa del laboratorio. Integra la capa estática del mapa (\texttt{static\_layer}), la capa de obstáculos de sensores (\texttt{obstacle\_layer}) y una capa de inflado (\texttt{inflation\_layer}) que expande los límites de los obstáculos en función del radio del chasis del robot, evitando que el planificador trace rutas rozando paredes.
+    \item \textbf{Local Costmap:} Una ventana móvil de dimensiones reducidas centrada en el robot. Se actualiza a alta frecuencia con los datos frescos del LiDAR para detectar obstáculos imprevistos o personas en movimiento que no aparecían en el mapa original.
+\end{itemize}
+
+\subsubsection{Planificador Global y Controlador Local}
+La navegación se divide en dos niveles complementarios:
+\begin{enumerate}
+    \item \textbf{Planificador Global (\texttt{planner\_server}):} Emplea el plugin \textit{Navfn} (basado en el algoritmo $A^*$ / Dijkstra) sobre el \textit{Global Costmap} para calcular el camino geométrico óptimo desde la posición actual hasta el objetivo fijado.
+    \item \textbf{Controlador Local (\texttt{controller\_server}):} Ejecuta el algoritmo \textit{MPPI} (\textit{Model Predictive Path Integral}) sobre el \textit{Local Costmap}. Genera miles de trayectorias candidatas en tiempo real respetando la cinemática diferencial del robot y selecciona la velocidad lineal y angular óptima, esquivando obstáculos imprevistos y publicando consignas en \texttt{/cmd\_vel}.
+    \item \textbf{Navegador de Comportamientos (\texttt{bt\_navigator}):} Supervisa la ejecución global. Si el robot se queda atascado o un obstáculo bloquea el paso, activa el servidor de recuperaciones (\texttt{behavior\_server}) para retroceder (\textit{backup}) o girar sobre su eje (\textit{spin}) antes de replanificar.
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_07_nav2_nodes.png}
+        \caption{Inicialización de servidores Nav2.}
+        \label{fig:b2_nav2_terminal}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_10_goal_pose.png}
+        \caption{Navegación hacia objetivo interactivo (\textit{2D Goal Pose}).}
+        \label{fig:b2_goal_pose}
+    \end{subfigure}
+    \caption{Activación de la pila Nav2 y desplazamiento autónomo hacia una meta seleccionada interactivamente en RViz2.}
+    \label{fig:grid_nav2_goal}
+\end{figure}
+
+\subsection{Introspección del Middleware ROS 2 (Sección 6.1)}
+
+Siguiendo las indicaciones de la Sección 6.1 del guion, se procedió a analizar en detalle la topología de nodos, tópicos y servicios que sustentan la navegación del TurtleBot 4.
+
+\subsubsection{Mapeo Detallado de Nodos e Interfaces}
+La Tabla~\ref{tab:mapeo_interfaces_nav2} resume las entradas, salidas, servicios y acciones de los nodos centrales del sistema de navegación.
+
+\begin{table}[htbp]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.1cm} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{3.6cm} >{\raggedright\arraybackslash}X}
+        \toprule
+        \textbf{Nodo Activo} & \textbf{Tópicos Suscritos} & \textbf{Tópicos Publicados} & \textbf{Servicios / Acciones} \\
+        \midrule
+        \texttt{/map\_server} & Parámetros del ciclo de vida & \texttt{/map}, \texttt{/map\_metadata} & Srv: \texttt{/map\_server/load\_map}, \texttt{/map\_server/change\_state} \\
+        \addlinespace
+        \texttt{/amcl} & \texttt{/scan}, \texttt{/tf}, \texttt{/initialpose}, \texttt{/map} & \texttt{/amcl\_pose}, \texttt{/particle\_cloud}, \texttt{/tf} (\texttt{map->odom}) & Srv: \texttt{/amcl/set\_initial\_pose}, gestión ciclo de vida \\
+        \addlinespace
+        \texttt{/planner\_server} & \texttt{/global\_costmap/}\allowbreak\texttt{costmap}, \texttt{/tf} & \texttt{/plan}, \texttt{/global\_costmap/}\allowbreak\texttt{published\_footprint} & Acción: \texttt{/compute\_path\_to\_pose}. \newline Srv: \texttt{/is\_path\_valid} \\
+        \addlinespace
+        \texttt{/controller\_}\allowbreak\texttt{server} & \texttt{/local\_costmap/}\allowbreak\texttt{costmap}, \texttt{/odom}, \texttt{/tf} & \texttt{/cmd\_vel\_nav}, marcadores trayectoria (\texttt{/optimal\_trajectory}) & Acción: \texttt{/follow\_path} \\
+        \addlinespace
+        \texttt{/bt\_navigator} & \texttt{/goal\_pose}, \texttt{/tf}, feedback de acciones & \texttt{/transformed\_}\allowbreak\texttt{global\_plan} & Acciones: \texttt{/navigate\_to\_pose}, \texttt{/navigate\_through\_poses} \\
+        \addlinespace
+        \texttt{/behavior\_server} & \texttt{/tf}, \texttt{/local\_costmap/}\allowbreak\texttt{costmap} & Comandos de recuperación & Acciones: \texttt{/spin}, \texttt{/backup}, \texttt{/drive\_on\_heading}, \texttt{/wait} \\
+        \addlinespace
+        \texttt{/diffdrive\_}\allowbreak\texttt{controller} & \texttt{/diffdrive\_}\allowbreak\texttt{controller/}\allowbreak\texttt{cmd\_vel}, \texttt{/clock} & \texttt{/odom}, \texttt{/tf} (\texttt{odom->base\_link}) & Srv: Control de actuadores en tiempo real \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Mapeo de interfaces de los componentes clave de la pila de navegación (Bloque 2).}
+    \label{tab:mapeo_interfaces_nav2}
+\end{table}
+
+\subsubsection{Grafo Computacional Dinámico (\texttt{rqt\_graph})}
+La inspección visual del grafo de computación se obtuvo mediante \texttt{rqt\_graph} (Figura~\ref{fig:b2_rqt_graph}). En ella se aprecia con claridad la separación entre la capa de estimación sensorial (AMCL procesando escaneos láser para publicar TF), la capa de decisión (Nav2 planificando y controlando) y el actuador diferencial final gobernado por \texttt{diffdrive\_controller}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{b2_11_rqt_graph.png}
+    \caption{Grafo dinámico de nodos y canales de comunicación de la navegación autónoma capturado mediante \texttt{rqt\_graph}.}
+    \label{fig:b2_rqt_graph}
+\end{figure}
+
+\subsection{Explicación del Flujo de Información en Navegación Autónoma}
+
+Para entender cómo se articula la toma de decisiones del robot durante una misión, analizamos el recorrido secuencial de la información a través de los nodos:
+
+\begin{enumerate}
+    \item \textbf{Adquisición sensorial:} Los encoders de las ruedas miden el giro de cada motor y publican la odometría en \texttt{/odom}. En paralelo, el sensor RPLIDAR realiza barridos a 10\,Hz publicando las distancias medidas en \texttt{/scan}.
+    \item \textbf{Localización en el mapa:} El nodo \texttt{amcl} recibe las lecturas de \texttt{/scan} y \texttt{/odom}, y las contrasta con el mapa estático (\texttt{/map}). A partir de esta correlación, calcula el error de deriva y emite la corrección en el marco \texttt{map -> odom}.
+    \item \textbf{Recepción del objetivo:} El usuario o un programa cliente envía una coordenada destino al tópico \texttt{/goal\_pose} o mediante una acción a \texttt{bt\_navigator}.
+    \item \textbf{Planificación global del camino:} El nodo \texttt{planner\_server} consulta el \textit{Global Costmap} y calcula una ruta libre de paredes que conecta la posición actual del robot con la meta.
+    \item \textbf{Control local y seguimiento reactivo:} El nodo \texttt{controller\_server} recibe la ruta global y, consultando el \textit{Local Costmap} (que incluye obstáculos en tiempo real), calcula las velocidades lineal ($v_x$) y angular ($\omega_z$) requeridas.
+    \item \textbf{Filtrado y seguridad:} La velocidad pasa por el nodo \texttt{velocity\_smoother} (para evitar tirones y respetar límites de aceleración) y por el monitor de colisión (\texttt{collision\_monitor}), antes de llegar al controlador de las ruedas (\texttt{diffdrive\_controller}) que mueve físicamente al TurtleBot 4 en el simulador.
+\end{enumerate}
+
+\subsection{Análisis e Interpretación del Árbol de Transformaciones (TF2)}
+
+La coherencia espacial de un robot móvil se gestiona mediante el árbol de transformaciones \textbf{TF2}, verificado mediante \texttt{ros2 run tf2\_tools view\_frames}. En robótica móvil existen tres marcos de referencia estándar:
+
+\begin{center}
+\small
+\texttt{map} $\xrightarrow{\text{AMCL (corrección)}}$ \texttt{odom} $\xrightarrow{\text{encoders (cinemática)}}$ \texttt{base\_link} $\longrightarrow$ \{\texttt{rplidar\_link}, \texttt{camera\_link}, \dots\}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{\texttt{map -> odom} (Transformación dinámica no continua):} Calculada y publicada por \textbf{AMCL}. Representa la corrección absoluta en el mapa global. Dado que las ruedas pueden patinar sobre el suelo, la odometría pura acumula error con el tiempo; AMCL ajusta este enlace de forma continua para que el robot nunca se desvíe en el mapa.
+    \item \textbf{\texttt{odom -> base\_link} (Transformación dinámica continua y de alta frecuencia):} Publicada a 50\,Hz por el controlador de tracción diferencial. Es una estimación suave y sin saltos basada en la integración del giro de las ruedas.
+    \item \textbf{Transformaciones estáticas de la plataforma:} Publicadas en \texttt{/tf\_static} por el nodo \texttt{robot\_state\_publisher}. Representan la traslación y orientación física constante desde el marco base \texttt{base\_link} hacia cada componente sensor (LiDAR, cámara, chasis y ruedas).
+\end{itemize}
+
+\subsection{Tarea de Programación Opcional: Control Autónomo en Python (Sección 6.2)}
+
+Cumpliendo con la Sección 6.2 del guion de la práctica, se implementó el script en Python \texttt{nav2\_send\_goal.py} alojado en el espacio de trabajo persistente (\texttt{\textasciitilde/ros2\_ws/p1\_scripts/}). Este script prescinde de clics manuales en RViz2, conectándose como un cliente nativo a la acción de ROS 2 \texttt{NavigateToPose} ofrecida por \texttt{bt\_navigator}.
+
+\subsubsection{Aspectos Técnicos de la Implementación}
+\begin{itemize}
+    \item \textbf{Sincronización con el reloj simulado (\texttt{use\_sim\_time}):} Para operar de forma robusta en Gazebo sin desincronizaciones temporales con TF2, el nodo inicializa el parámetro \texttt{use\_sim\_time=True} y espera a recibir la primera señal de \texttt{/clock} antes de sellar el mensaje \texttt{PoseStamped} de la meta.
+    \item \textbf{Conversión de Orientación:} El script recibe el ángulo de orientación deseado en grados sexagesimales (\texttt{yaw}) y lo convierte matemáticamente en un cuaternión unitario $\mathbf{q} = (x, y, z, w)$ compatible con los estándares de ROS 2.
+    \item \textbf{Retroalimentación Asíncrona en Tiempo Real:} El cliente escucha las llamadas de realimentación (\textit{feedback callback}) de Nav2, imprimiendo en consola la distancia euclídea restante hasta la meta, el tiempo transcurrido de misión y el número de maniobras de recuperación ejecutadas.
+\end{itemize}
+
+\subsubsection{Validación Experimental}
+Se ejecutó el envío de una meta situada en la zona central despejada del almacén ($X = 1.50\,\text{m}, Y = -0.50\,\text{m}, \text{Yaw} = 90^\circ$):
+\begin{lstlisting}[language=bash]
+python3 nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
+\end{lstlisting}
+
+Como ilustra la Figura~\ref{fig:grid_python_nav2}, el planificador de Nav2 aceptó el objetivo, generó la trayectoria y el TurtleBot 4 navegó de forma completamente autónoma disminuyendo la distancia de $1.60\,\text{m}$ a $0.22\,\text{m}$ hasta alcanzar la tolerancia de parada en $75.07\,\text{s}$, completando la misión con éxito.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_12_script_terminal.png}
+        \caption{Salida en terminal con retroalimentación y éxito.}
+        \label{fig:b2_script_terminal}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{b2_13_script_goal_reached.png}
+        \caption{TurtleBot 4 posicionado en la meta final en simulación.}
+        \label{fig:b2_script_goal_reached}
+    \end{subfigure}
+    \caption{Validación experimental de la tarea de programación opcional de navegación en Python: registro de ejecución en consola y estado de llegada del robot.}
+    \label{fig:grid_python_nav2}
+\end{figure}
+
+\vspace{1em}
+
+% ---------------------------
+% 3. DESARROLLO DEL BLOQUE 4: MANIPULACIÓN ROBÓTICA (UR3e + MOVEIT 2)
 % ---------------------------
 \section{Bloque 4 -- Manipulación Robótica (UR3e y MoveIt 2)}
 
