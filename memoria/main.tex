@@ -1,0 +1,368 @@
+\documentclass[11pt,a4paper]{article}
+
+% =============================================================================
+% CONFIGURACIÓN DE PAQUETES Y ESTILO ACADÉMICO
+% =============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.0cm,top=2.2cm,bottom=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+% Definición de colores institucionales y de código
+\definecolor{uaBlue}{RGB}{20, 50, 110}
+\definecolor{uaDarkSlate}{RGB}{35, 45, 60}
+\definecolor{codeBg}{RGB}{248, 249, 250}
+\definecolor{codeFrame}{RGB}{220, 224, 230}
+\definecolor{codeGreen}{RGB}{46, 139, 87}
+\definecolor{codePurple}{RGB}{128, 0, 128}
+
+% Configuración de hipervínculos
+\hypersetup{
+    colorlinks=true,
+    linkcolor=uaBlue,
+    citecolor=uaBlue,
+    urlcolor=uaBlue,
+    pdftitle={Memoria Técnica - Práctica 1: Robótica Móvil y Manipulación},
+    pdfauthor={Grado en Ingeniería en Inteligencia Artificial - Universidad de Alicante}
+}
+
+% Configuración de cabeceras y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{uaDarkSlate}{\textbf{Robótica Inteligente} \textbar\ Práctica 1}}
+\fancyhead[R]{\small\textcolor{uaDarkSlate}{EPS \textbar\ Universidad de Alicante}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+% Formato de títulos de sección
+\titleformat{\section}{\color{uaBlue}\normalfont\Large\bfseries}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\color{uaDarkSlate}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\color{uaDarkSlate}\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% Configuración de listados de código
+\lstset{
+    backgroundcolor=\color{codeBg},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{codeFrame},
+    numbers=none,
+    keywordstyle=\color{uaBlue}\bfseries,
+    commentstyle=\color{codeGreen}\itshape,
+    stringstyle=\color{codePurple},
+    showstringspaces=false,
+    tabsize=2,
+    aboveskip=5pt,
+    belowskip=5pt
+}
+
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+
+\graphicspath{{capturas/bloque4/}{../diagramas/}}
+
+% =============================================================================
+% INICIO DEL DOCUMENTO
+% =============================================================================
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+    \centering
+    \vspace*{1.0cm}
+    {\Huge\bfseries\color{uaBlue} Universidad de Alicante}\\[0.3cm]
+    {\LARGE\bfseries\color{uaDarkSlate} Escuela Politécnica Superior}\\[0.2cm]
+    {\large Grado en Ingeniería en Inteligencia Artificial \textbar\ Curso 4º (2026/2027)}\\[1.8cm]
+
+    \rule{\linewidth}{1.5pt}\\[0.4cm]
+    {\huge\bfseries\color{uaBlue} Robótica Inteligente (33683)}\\[0.3cm]
+    {\Large\bfseries Memoria Técnica de Práctica 1}\\[0.2cm]
+    {\large\itshape Introducción a las Herramientas Básicas para Robótica Móvil y Manipulación:\\
+    ROS 2, Gazebo Harmonic, Nav2, MoveIt 2 y Oxford Spires Dataset}\\[0.3cm]
+    \rule{\linewidth}{1.5pt}\\[2.5cm]
+
+    \begin{minipage}{0.48\textwidth}
+        \begin{flushleft}
+            \textbf{\color{uaBlue} Profesor / Tutor:}\\[0.15cm]
+            M.A. Muñoz-Bañón\\
+            \small Dpto. de Física, Ingeniería de Sistemas\\
+            y Teoría de la Señal
+        \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \begin{flushright}
+            \textbf{\color{uaBlue} Equipo de Prácticas:}\\[0.15cm]
+            Santiago Álvarez González (\texttt{santvz6})\\[0.3cm]
+            \textbf{\color{uaBlue} Fecha de Evaluación:}\\[0.15cm]
+            Octubre de 2026
+        \end{flushright}
+    \end{minipage}
+
+    \vfill
+    {\small Entorno de ejecución: ROS 2 Jazzy Jalisco \textbar\ Gazebo Harmonic 8.0 \textbar\ Ubuntu 24.04 LTS (Docker)}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\newpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+% ---------------------------
+% 1. INTRODUCCIÓN GENERAL DE LA PRÁCTICA
+% ---------------------------
+\section{Introducción y Estructura Global de la Práctica}
+
+La presente memoria técnica documenta el desarrollo integral y el análisis exhaustivo de la \textbf{Práctica 1 de Robótica Inteligente}. El objetivo central consiste en capacitar al alumnado en las herramientas de vanguardia para investigación e industria en robótica: el middleware distribuido \textbf{ROS 2 (Jazzy Jalisco)}, el simulador dinámico \textbf{Gazebo Harmonic} y los frameworks avanzados de navegación autónoma (\textbf{Nav2}), odometría LiDAR-inercial (\textbf{RKO-LIO}) y manipulación robótica industrial (\textbf{MoveIt 2}).
+
+Toda la suite de desarrollo opera encapsulada sobre un contenedor persistente de \textbf{Docker} con aceleración gráfica por hardware (GPU NVIDIA dedicada, soporte PRIME Offload y paso directo X11), eliminando conflictos de dependencias y asegurando la reproducibilidad íntegra de los experimentos.
+
+\subsection{Estructura Modular de la Práctica}
+De acuerdo con las directrices de la guía docente, la práctica se estructura en cuatro bloques secuenciales:
+\begin{itemize}
+    \item \textbf{Bloque 1 -- Fundamentos de ROS 2:} Dominio de la arquitectura orientada a grafos de nodos, canales asíncronos (tópicos), llamadas síncronas (servicios) y tareas continuas con retroalimentación (acciones).
+    \item \textbf{Bloque 2 -- Mapeo y Navegación Autónoma (Nav2):} Generación de mapas de ocupación 2D mediante \textit{SLAM Toolbox} y control de plataforma móvil diferencial \textit{TurtleBot 4} empleando filtros de partículas (AMCL) y controladores predictivos MPPI. \textit{[Desarrollo documentado en anexo correspondiente]}.
+    \item \textbf{Bloque 3 -- Odometría LiDAR-Inercial (LIO) con Datos Reales:} Procesamiento sensorial denso sobre secuencias reales del \textit{Oxford Spires Dataset} (Keble College) mediante el pipeline \textit{RKO-LIO}. \textit{[Desarrollo documentado en anexo correspondiente]}.
+    \item \textbf{Bloque 4 -- Manipulación Robótica (MoveIt 2):} Control cinemático cartesiano y articular del brazo industrial \textit{Universal Robots UR3e} (6 DOF) en simulación dinámica y planificación libre de colisiones.
+\end{itemize}
+
+\vspace{1em}
+
+% ---------------------------
+% 2. DESARROLLO DEL BLOQUE 4: MANIPULACIÓN ROBÓTICA (UR3e + MOVEIT 2)
+% ---------------------------
+\section{Bloque 4 -- Manipulación Robótica (UR3e y MoveIt 2)}
+
+\subsection{Contexto y Arquitectura de los Tres Pilares}
+
+La manipulación robótica aborda el gobierno de cadenas cinemáticas abiertas articuladas en el espacio tridimensional ($\mathbb{R}^3 \times \mathrm{SO}(3)$). A diferencia del desplazamiento móvil restringido al plano bidimensional $\mathrm{SE}(2)$, un brazo articulado debe gestionar acoplamientos no lineales de inercia, singularidades cinemáticas del jacobiano y la resolución de geometrías de colisión complejas.
+
+El sistema desplegado integra el cobot de 6 grados de libertad \textbf{Universal Robots UR3e} sustentado sobre tres componentes tecnológicos que interactúan de forma desacoplada:
+
+\begin{enumerate}
+    \item \textbf{Gazebo Harmonic (\texttt{gz-sim}):} Motor de física de cuerpos rígidos (\textit{DART Physics Engine}). Modela la gravedad, inercias de eslabones, restricciones de articulación (\textit{revolute joints}) y dinámica de contactos.
+    \item \textbf{ros2\_control (\texttt{controller\_manager}):} Capa de abstracción de hardware en tiempo real. Gestiona el ciclo de vida del \texttt{joint\_state\_broadcaster} (lectura de encoders) y del \texttt{scaled\_joint\_}\-\texttt{trajectory\_controller} (seguimiento de trayectorias articulares con escalado dinámico de velocidad ante sobrecargas).
+    \item \textbf{MoveIt 2 (\texttt{move\_group}):} Núcleo de computación cinemática y planificación espacial. Gestiona el estado de la escena (\textit{Planning Scene}), resuelve la cinemática inversa analítica/numérica y utiliza algoritmos de muestreo probabilístico (\textbf{OMPL}) para trazar caminos libres de colisiones.
+\end{enumerate}
+
+\subsection{Despliegue y Control Interactivo en RViz2}
+
+El ecosistema completo se inicializa mediante un único script de \textit{launch} optimizado:
+\begin{lstlisting}[language=bash]
+ros2 launch ur_simulation_gz ur_sim_moveit.launch.py ur_type:=ur3e
+\end{lstlisting}
+Este comando arranca simultáneamente el simulador Gazebo Harmonic y la interfaz de visualización 3D \textbf{RViz2} configurada con el plugin \textit{MotionPlanning} y el árbol URDF del robot.
+
+\subsubsection{Operación en el Espacio de Trabajo}
+El control interactivo se realiza gobernando el efector final (\texttt{tool0}):
+\begin{enumerate}
+    \item \textbf{Marcador Interactivo:} RViz dibuja un manipulador esférico con anillos ortogonales de rotación y flechas de traslación cartesianas ($X, Y, Z$) sobre el extremo del robot.
+    \item \textbf{Estado Objetivo (\textit{Goal State}):} Al arrastrar el marcador con el ratón, se calcula en tiempo real la cinemática inversa y se proyecta la postura destino mediante un robot semitransparente de color naranja.
+    \item \textbf{Planificación y Ejecución (\textit{Plan and Execute}):} En el panel \textit{MotionPlanning}, la pestaña \textit{Planning} ejecuta el planificador OMPL (algoritmo RRTConnect) y transmite los splines interpolados a \texttt{ros2\_control}, haciendo que el brazo físico en Gazebo ejecute la trayectoria de forma suave.
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{mover_extremo.png}
+        \caption{Arrastre interactivo (\textit{Goal State}).}
+        \label{fig:mover_extremo}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plan_and_execute.png}
+        \caption{Panel \textit{MotionPlanning}.}
+        \label{fig:panel_plan}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ejecutar.png}
+        \caption{Trayectoria ejecutada con éxito.}
+        \label{fig:ejecutar_exito}
+    \end{subfigure}
+    \caption{Secuencia de interacción manual en RViz2: fijación de meta cartesiana 3D mediante marcador interactivo, cálculo de trayectoria OMPL y ejecución dinámica en Gazebo.}
+    \label{fig:grid_interaccion_manual}
+\end{figure}
+
+\subsection{Introspección del Middleware ROS 2 (Sección 6.1)}
+
+Conforme a los requerimientos de la Sección 6.1 del guion, se procedió a interrogar al middleware utilizando herramientas CLI de introspección activa. Se detectaron \textbf{19 nodos funcionales} coordinando la simulación.
+
+\subsubsection{Mapeo Detallado de Nodos e Interfaces}
+La Tabla~\ref{tab:mapeo_interfaces_ur3e} resume las entradas, salidas, servicios y acciones de los nodos medulares del pipeline.
+
+\begin{table}[htbp]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}X}
+        \toprule
+        \textbf{Nodo Activo} & \textbf{Tópicos Suscritos} & \textbf{Tópicos Publicados} & \textbf{Servicios / Acciones} \\
+        \midrule
+        \texttt{/move\_group} & \texttt{/joint\_states}, \texttt{/clock}, \texttt{/trajectory\_}\-\texttt{execution\_event} & \texttt{/display\_}\allowbreak\texttt{planned\_path}, \texttt{/monitored\_}\-\texttt{planning\_scene} & Acciones: \texttt{/move\_action}, \texttt{/execute\_trajectory}. \newline Srv: \texttt{/compute\_}\-\texttt{cartesian\_path} \\
+        \addlinespace
+        \texttt{/controller\_manager} & \texttt{/clock}, \texttt{/robot\_description} & \texttt{/controller\_}\allowbreak\texttt{manager/activity}, métricas de lazo & Srv: \texttt{/switch\_controller}, \texttt{/load\_controller} \\
+        \addlinespace
+        \texttt{/joint\_state\_}\-\texttt{broadcaster} & \texttt{/clock} & \texttt{/joint\_states}, \texttt{/dynamic\_joint\_states} & Srv: Parámetros del broadcaster \\
+        \addlinespace
+        \texttt{/scaled\_joint\_}\newline\texttt{trajectory\_controller} & \texttt{/clock}, consignas de trayectoria & \texttt{/controller\_state}, eventos de transición & Acción: \newline \texttt{/scaled\_joint\_}\allowbreak\texttt{trajectory\_}\allowbreak\texttt{controller/}\allowbreak\texttt{follow\_joint\_}\allowbreak\texttt{trajectory} \\
+        \addlinespace
+        \texttt{/robot\_state\_}\-\texttt{publisher} & \texttt{/joint\_states}, \texttt{/clock} & \texttt{/tf}, \texttt{/tf\_static}, \texttt{/robot\_description} & Srv: Introspección URDF \\
+        \addlinespace
+        \texttt{/rviz2\_moveit} & \texttt{/display\_}\allowbreak\texttt{planned\_path}, \texttt{/tf}, \texttt{/tf\_static} & Feedback de marcadores, \texttt{/goal\_pose} & Cliente de acción: \texttt{/move\_action} \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Mapeo de interfaces de los componentes principales del Bloque 4.}
+    \label{tab:mapeo_interfaces_ur3e}
+\end{table}
+
+\subsubsection{Grafo Computacional Dinámico (\texttt{rqt\_graph})}
+El análisis gráfico ejecutado con \texttt{ros2 run rqt\_graph rqt\_graph} (Figura~\ref{fig:grafo_nodos}) confirma la arquitectura desacoplada: \texttt{joint\_state\_broadcaster} actúa como el puente sensorial alimentando a \texttt{robot\_state\_publisher} y a \texttt{move\_group}, mientras que la ejecución de comandos se delega al controlador articular de \texttt{ros2\_control}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{grafo_nodos.png}
+    \caption{Grafo dinámico de nodos y tópicos del sistema capturado en vivo mediante \texttt{rqt\_graph}.}
+    \label{fig:grafo_nodos}
+\end{figure}
+
+\subsection{Explicación del Flujo Matemático y Sensorial}
+
+La pregunta central de la memoria técnica exige justificar: \textit{¿Cómo fluye la información matemática y sensorial desde que se genera la consigna hasta que se traduce en un movimiento físico del robot en el simulador?}
+
+El ciclo de realimentación se descompone en cuatro fases rigurosas:
+
+\begin{enumerate}
+    \item \textbf{Definición de Meta y Cinemática Inversa (IK):}\\
+    Dada una consigna cartesiana en el efector final $\mathbf{T}_{\mathrm{goal}} \in \mathrm{SE}(3)$ compuesta por posición tridimensional $\mathbf{p} = [x, y, z]^T$ y orientación en cuaternión unitario $\mathbf{q}_{\mathrm{ori}} = [q_x, q_y, q_z, q_w]^T$, el solver cinemático de MoveIt resuelve el problema de cinemática inversa:
+    \begin{equation}
+        \boldsymbol{\theta}^* = f^{-1}(\mathbf{T}_{\mathrm{goal}}), \quad \boldsymbol{\theta}^* \in \mathbb{T}^6
+    \end{equation}
+    Para el UR3e, la existencia de una estructura con tres ejes de muñeca concurrentes desacopla el problema en posición del centro de muñeca y orientación, existiendo hasta 8 soluciones analíticas posibles. MoveIt selecciona aquella solución que minimiza la distancia cuadrática a la postura actual $\sum_{i=1}^6 (\theta_i - \theta_{i,\mathrm{actual}})^2$ y satisface la ausencia de auto-colisiones.
+
+    \item \textbf{Exploración del Espacio de Configuraciones libre (OMPL -- RRTConnect):}\\
+    Identificado el punto meta $\boldsymbol{\theta}_{\mathrm{goal}}$, el planificador \textbf{RRTConnect} hace crecer bidireccionalmente dos árboles aleatorios en el espacio de configuraciones $\mathcal{C}_{\mathrm{free}}$. En cada iteración se valida el segmento mediante la librería de colisiones FCL (\textit{Flexible Collision Library}) contra el modelo URDF del robot y los objetos del entorno. Al conectarse ambos árboles, se obtiene una secuencia de estados libre de choque.
+
+    \item \textbf{Parametrización Temporal TOTG e Interpolación de Splines:}\\
+    La trayectoria geométrica se parametriza en el tiempo respetando los límites de velocidad $\dot{\boldsymbol{\theta}}_{\max}$ y aceleración $\ddot{\boldsymbol{\theta}}_{\max}$ del fabricante. El algoritmo \textbf{TOTG} (\textit{Time-Optimal Trajectory Generation}) envía los puntos de consigna al servidor de acción \texttt{FollowJointTrajectory}.
+
+    \item \textbf{Control de Bajo Nivel y Dinámica en Gazebo:}\\
+    El controlador \texttt{scaled\_joint\_}\-\texttt{trajectory\_controller} evalúa un lazo cerrado PID a 1000 Hz:
+    \begin{equation}
+        \boldsymbol{\tau}(t) = \mathbf{K}_p \mathbf{e}(t) + \mathbf{K}_i \int_0^t \mathbf{e}(\sigma) d\sigma + \mathbf{K}_d \dot{\mathbf{e}}(t)
+    \end{equation}
+    donde $\mathbf{e}(t) = \boldsymbol{\theta}_{\mathrm{des}}(t) - \boldsymbol{\theta}_{\mathrm{real}}(t)$. El plugin \texttt{gz\_ros\_control} traduce estos pares en fuerzas que el motor físico DART integra numéricamente en las ecuaciones dinámicas de Newton-Euler, actualizando las articulaciones físicas en el mundo virtual.
+\end{enumerate}
+
+\subsection{Análisis e Interpretación del Árbol de Transformaciones (TF2)}
+
+La comprensión espacial de la cadena cinemática se verificó mediante la herramienta \texttt{ros2 run tf2\_tools view\_frames} (Figura~\ref{fig:grid_tf}).
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{arbol-tf2.png}
+        \caption{Extracción de \textit{frames} con \texttt{view\_frames}.}
+        \label{fig:tf_view_frames}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{transformacion_dinamica.png}
+        \caption{Inspección en vivo con \texttt{echo /tf --once}.}
+        \label{fig:tf_echo}
+    \end{subfigure}
+    \caption{Introspección del árbol espacial de transformaciones geométricas (TF2) en consola.}
+    \label{fig:grid_tf}
+\end{figure}
+
+El árbol jerárquico se compone de \textbf{14 marcos de referencia} encadenados:
+\begin{align*}
+    \text{world} &\longrightarrow \text{base\_link} \longrightarrow \text{base\_link\_inertia} \longrightarrow \text{shoulder\_link} \longrightarrow \text{upper\_arm\_link} \\
+    &\longrightarrow \text{forearm\_link} \longrightarrow \text{wrist\_1\_link} \longrightarrow \text{wrist\_2\_link} \longrightarrow \text{wrist\_3\_link} \longrightarrow \text{flange} \longrightarrow \text{tool0}
+\end{align*}
+
+\begin{itemize}
+    \item \textbf{Transformaciones Estáticas (\texttt{/tf\_static}):} Invariantes en el tiempo, tales como la fijación del robot al suelo (\texttt{world -> base\_link}), la inercia interna de la peana y la distancia fija entre la brida mecánica y el centro de herramienta (\texttt{flange -> tool0}).
+    \item \textbf{Transformaciones Dinámicas (\texttt{/tf}):} Publicadas a una frecuencia nominal de \textbf{20.16 Hz} por \texttt{robot\_state\_publisher}. Cada enlace móvil transmite un vector de traslación constante (longitud del eslabón) y un cuaternión de rotación unitario variable que refleja en tiempo real el ángulo del servomotor.
+\end{itemize}
+
+\subsection{Tarea de Programación Opcional: Control en Python (Sección 6.2)}
+
+Para aspirar a la máxima calificación según la Sección 6.2 del guion, se programó y validó el script en Python \texttt{ur3e\_send\_pose.py} en el espacio de trabajo persistente (\texttt{\textasciitilde/ros2\_ws/p1\_scripts/}). Este script prescinde enteramente de la interfaz gráfica RViz2, conectándose como cliente directo a las acciones de ROS 2.
+
+Se validaron tres modos de control en la consola (Figura~\ref{fig:grid_pruebas_python}):
+
+\begin{enumerate}
+    \item \textbf{Prueba A -- Modo Articular Directo (\texttt{--mode joint}):}\\
+    Envío directo de la configuración articular $\boldsymbol{\theta} = [0.0, -1.57, 1.57, -1.57, -1.57, 0.0]\,\text{rad}$ al nodo \texttt{scaled\_joint\_}\-\texttt{trajectory\_controller}. El manipulador flexiona el codo en ángulo recto con perfil suave interpolado en 4.0 segundos.
+    \begin{lstlisting}[language=bash]
+python3 ur3e_send_pose.py --mode joint --joints 0.0 -1.57 1.57 -1.57 -1.57 0.0
+    \end{lstlisting}
+
+    \item \textbf{Prueba B -- Modo Cinemático Cartesiano 3D (\texttt{--mode cartesian}):}
+    Fijación de coordenada espacial $(X=0.25\,\text{m}, Y=0.15\,\text{m}, Z=0.35\,\text{m})$ con orientación vertical ($\mathrm{pitch}=\pi$). La orden viaja al servidor de acción \texttt{/move\_action} de MoveIt 2, el cual calcula cinemática inversa y trayectoria OMPL sin colisiones antes de ejecutar.
+    \begin{lstlisting}[language=bash]
+python3 ur3e_send_pose.py --mode cartesian --x 0.25 --y 0.15 --z 0.35
+    \end{lstlisting}
+
+    \item \textbf{Prueba C -- Poses Semánticas SRDF (\texttt{--mode named}):}
+    Carga de posturas preestablecidas de fábrica (\texttt{home}, \texttt{up}, \texttt{test\_configuration}) definidas en el archivo semántico SRDF de Universal Robots.
+    \begin{lstlisting}[language=bash]
+python3 ur3e_send_pose.py --mode named --named home
+    \end{lstlisting}
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{prueba-A_control_directo.png}
+        \caption{Prueba A: Control Articular.}
+        \label{fig:prueba_a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{prueba-B_control_cartesiano_3d.png}
+        \caption{Prueba B: Meta Cartesiana 3D.}
+        \label{fig:prueba_b}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{prueba-C_poses_sematicas_srdf.png}
+        \caption{Prueba C: Pose Semántica \textit{home}.}
+        \label{fig:prueba_c}
+    \end{subfigure}
+    \caption{Validación experimental de la tarea de programación opcional (Sección 6.2): ejecución de comandos desde la terminal y respuesta síncrona del robot en RViz2 y Gazebo.}
+    \label{fig:grid_pruebas_python}
+\end{figure}
+
+\subsection{Conclusiones del Bloque 4}
+El desarrollo del Bloque 4 ha permitido comprobar de primera mano la solvencia del ecosistema industrial \textbf{ROS 2 + MoveIt 2 + ros2\_control}:
+\begin{itemize}
+    \item La separación entre la cinemática de alto nivel (\texttt{move\_group}) y el control de bajo nivel vía \texttt{ros2\_control} asegura la estabilidad del sistema ante posibles singularidades o colisiones inminentes.
+    \item La arquitectura de acciones permite una monitorización continua de las metas cartesianas con posibilidad de cancelación inmediata.
+    \item La validación programática por código Python confirma la madurez de la plataforma para su futura integración con algoritmos de visión por computador y aprendizaje automático en tareas de manipulación inteligente.
+\end{itemize}
+
+\end{document}
