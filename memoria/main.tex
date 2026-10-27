@@ -150,9 +150,7 @@ De acuerdo con las directrices de la guía docente, la práctica se estructura e
 
 \subsection{Contexto y Arquitectura de los Tres Pilares}
 
-La manipulación robótica aborda el gobierno de cadenas cinemáticas abiertas articuladas en el espacio tridimensional ($\mathbb{R}^3 \times \mathrm{SO}(3)$). A diferencia del desplazamiento móvil restringido al plano bidimensional $\mathrm{SE}(2)$, un brazo articulado debe gestionar acoplamientos no lineales de inercia, singularidades cinemáticas del jacobiano y la resolución de geometrías de colisión complejas.
-
-El sistema desplegado integra el cobot de 6 grados de libertad \textbf{Universal Robots UR3e} sustentado sobre tres componentes tecnológicos que interactúan de forma desacoplada:
+El sistema desplegado integra el cobot de 6 grados de libertad \textbf{Universal Robots UR3e} en simulación, sustentado sobre tres componentes tecnológicos que interactúan de forma desacoplada:
 
 \begin{enumerate}
     \item \textbf{Gazebo Harmonic (\texttt{gz-sim}):} Motor de física de cuerpos rígidos (\textit{DART Physics Engine}). Modela la gravedad, inercias de eslabones, restricciones de articulación (\textit{revolute joints}) y dinámica de contactos.
