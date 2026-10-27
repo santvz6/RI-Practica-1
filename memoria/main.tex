@@ -128,16 +128,16 @@
 % ---------------------------
 \section{Introducción y Estructura Global de la Práctica}
 
-La presente memoria técnica documenta el desarrollo integral y el análisis exhaustivo de la \textbf{Práctica 1 de Robótica Inteligente}. El objetivo central consiste en capacitar al alumnado en las herramientas de vanguardia para investigación e industria en robótica: el middleware distribuido \textbf{ROS 2 (Jazzy Jalisco)}, el simulador dinámico \textbf{Gazebo Harmonic} y los frameworks avanzados de navegación autónoma (\textbf{Nav2}), odometría LiDAR-inercial (\textbf{RKO-LIO}) y manipulación robótica industrial (\textbf{MoveIt 2}).
+La presente memoria técnica documenta el desarrollo y análisis experimental de la \textbf{Práctica 1 de Robótica Inteligente}. El objetivo consiste en adquirir destreza práctica en las herramientas estándar de robótica: el middleware \textbf{ROS 2 (Jazzy Jalisco)}, el simulador \textbf{Gazebo Harmonic}, la pila de navegación autónoma \textbf{Nav2}, la odometría LiDAR-inercial (\textbf{RKO-LIO}) y la manipulación robótica con \textbf{MoveIt 2}.
 
-Toda la suite de desarrollo opera encapsulada sobre un contenedor persistente de \textbf{Docker} con aceleración gráfica por hardware (GPU NVIDIA dedicada, soporte PRIME Offload y paso directo X11), eliminando conflictos de dependencias y asegurando la reproducibilidad íntegra de los experimentos.
+El desarrollo se realiza sobre el contenedor \textbf{Docker} oficial de la asignatura, configurado con soporte para aceleración gráfica y visualización mediante X11, lo que garantiza un entorno reproducible y aislado.
 
 \subsection{Estructura Modular de la Práctica}
 De acuerdo con las directrices de la guía docente, la práctica se estructura en cuatro bloques secuenciales:
 \begin{itemize}
     \item \textbf{Bloque 1 -- Fundamentos de ROS 2:} Dominio de la arquitectura orientada a grafos de nodos, canales asíncronos (tópicos), llamadas síncronas (servicios) y tareas continuas con retroalimentación (acciones).
     \item \textbf{Bloque 2 -- Mapeo y Navegación Autónoma (Nav2):} Generación de mapas de ocupación 2D mediante SLAM, localización probabilística con filtros de partículas (AMCL) y control de plataforma móvil diferencial \textit{TurtleBot 4} empleando la pila \textit{Nav2}.
-    \item \textbf{Bloque 3 -- Odometría LiDAR-Inercial (LIO) con Datos Reales:} Procesamiento sensorial denso sobre secuencias reales del \textit{Oxford Spires Dataset} (Keble College) mediante el pipeline \textit{RKO-LIO}. \textit{[Desarrollo documentado en anexo correspondiente]}.
+    \item \textbf{Bloque 3 -- Odometría LiDAR-Inercial (LIO) con Datos Reales:} Procesamiento sensorial denso sobre secuencias reales del \textit{Oxford Spires Dataset} (Keble College) mediante el pipeline \textit{RKO-LIO}.
     \item \textbf{Bloque 4 -- Manipulación Robótica (MoveIt 2):} Control cinemático cartesiano y articular del brazo industrial \textit{Universal Robots UR3e} (6 DOF) en simulación dinámica y planificación libre de colisiones.
 \end{itemize}
 
@@ -150,7 +150,7 @@ De acuerdo con las directrices de la guía docente, la práctica se estructura e
 
 \subsection{Contexto y Plataforma Móvil Diferencial}
 
-En este bloque abordamos el problema clásico de la robótica móvil: cómo un robot autónomo puede explorar un entorno desconocido, construir un mapa digital de ocupación, ubicarse con precisión dentro de él y desplazarse de un punto a otro de forma completamente autónoma sorteando obstáculos estáticos y dinámicos.
+En este bloque se aborda la configuración y evaluación práctica de la navegación autónoma con el TurtleBot 4: generación del mapa del entorno con SLAM, estimación de la posición con el filtro de partículas AMCL y desplazamiento reactivo hacia metas mediante Nav2.
 
 La plataforma utilizada es el \textbf{TurtleBot 4}, un robot móvil de tracción diferencial estándar en investigación educativa que integra:
 \begin{itemize}
@@ -365,7 +365,7 @@ La coherencia espacial de un robot móvil se gestiona mediante el árbol de tran
 
 \begin{center}
 \small
-\texttt{map} $\xrightarrow{\text{AMCL (corrección)}}$ \texttt{odom} $\xrightarrow{\text{encoders (cinemática)}}$ \texttt{base\_link} $\longrightarrow$ \{\texttt{rplidar\_link}, \texttt{camera\_link}, \dots\}
+\texttt{map} $\xrightarrow{\text{AMCL (corrección)}}$ \texttt{odom} $\xrightarrow{\text{encoders (cinemática)}}$ \texttt{base\_link} $\longrightarrow$ \{\texttt{rplidar\_link}, \texttt{oakd\_link}, \texttt{wheel\_left\_link}, \texttt{wheel\_right\_link}\}
 \end{center}
 
 \begin{itemize}
@@ -418,7 +418,7 @@ developer@santvz6:~/ros2_ws$ python3 p1_scripts/nav2_send_goal.py --x 1.5 --y -0
 
 \subsection{Contexto y Arquitectura de los Tres Pilares}
 
-El sistema desplegado integra el cobot de 6 grados de libertad \textbf{Universal Robots UR3e} en simulación, sustentado sobre tres componentes tecnológicos que interactúan de forma desacoplada:
+El sistema integra el cobot de 6 grados de libertad \textbf{Universal Robots UR3e} en simulación, estructurado en tres componentes principales:
 
 \begin{enumerate}
     \item \textbf{Gazebo Harmonic (\texttt{gz-sim}):} Motor de física de cuerpos rígidos (\textit{DART Physics Engine}). Modela la gravedad, inercias de eslabones, restricciones de articulación (\textit{revolute joints}) y dinámica de contactos.
