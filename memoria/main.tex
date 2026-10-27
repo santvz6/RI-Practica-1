@@ -391,26 +391,23 @@ Se ejecutó el envío de una meta situada en la zona central despejada del almac
 python3 nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
 \end{lstlisting}
 
-Como ilustra la Figura~\ref{fig:grid_python_nav2}, el planificador de Nav2 aceptó el objetivo, generó la trayectoria y el TurtleBot 4 navegó de forma completamente autónoma disminuyendo la distancia de $1.60\,\text{m}$ a $0.22\,\text{m}$ hasta alcanzar la tolerancia de parada en $75.07\,\text{s}$, completando la misión con éxito.
+El planificador global de Nav2 aceptó el objetivo de forma inmediata y trazó la trayectoria libre de obstáculos. Durante el desplazamiento, el cliente de acción monitorizó en tiempo real la aproximación continua del vehículo móvil mediante las llamadas de retroalimentación asíncrona, observándose la reducción progresiva de la distancia euclídea desde $1.60\,\text{m}$ hasta alcanzar la tolerancia de llegada ($0.22\,\text{m}$) en $75.07\,\text{s}$.
 
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{b2_12_script_terminal.png}
-        \caption{Salida en terminal con retroalimentación y éxito.}
-        \label{fig:b2_script_terminal}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{b2_13_script_goal_reached.png}
-        \caption{TurtleBot 4 posicionado en la meta final en simulación.}
-        \label{fig:b2_script_goal_reached}
-    \end{subfigure}
-    \caption{Validación experimental de la tarea de programación opcional de navegación en Python: registro de ejecución en consola y estado de llegada del robot.}
-    \label{fig:grid_python_nav2}
-\end{figure}
+El registro de la terminal con las trazas de estado y tiempos de la misión se recoge en el Listado~\ref{lst:salida_nav2_python}.
+
+\begin{lstlisting}[language=bash,caption={Registro de ejecución y retroalimentación asíncrona en consola (\texttt{nav2\_send\_goal.py}).},label={lst:salida_nav2_python}]
+developer@santvz6:~/ros2_ws$ python3 p1_scripts/nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
+[INFO] [nav2_goal_sender_node]: Inicializando cliente de navegacion autonoma Nav2 (use_sim_time=True)...
+[INFO] [nav2_goal_sender_node]: Conectando con el servidor de accion "navigate_to_pose"...
+[INFO] [nav2_goal_sender_node]: Enviando objetivo -> X: 1.50 m, Y: -0.50 m, Yaw: 90.0 deg (1.57 rad) en frame "map"
+[INFO] [nav2_goal_sender_node]: Objetivo ACEPTADO por Nav2. Iniciando ejecucion de trayectoria...
+[Nav2 Feedback] Distancia restante: 1.60 m | Tiempo:  0.0 s | Recuperaciones: 0
+[Nav2 Feedback] Distancia restante: 1.42 m | Tiempo:  7.3 s | Recuperaciones: 0
+[Nav2 Feedback] Distancia restante: 1.17 m | Tiempo: 21.0 s | Recuperaciones: 3
+[Nav2 Feedback] Distancia restante: 0.86 m | Tiempo: 46.7 s | Recuperaciones: 5
+[Nav2 Feedback] Distancia restante: 0.22 m | Tiempo: 51.7 s | Recuperaciones: 5
+[INFO] [nav2_goal_sender_node]: EXITO: El TurtleBot 4 ha alcanzado la pose objetivo en 75.07 s.
+\end{lstlisting}
 
 \vspace{1em}
 
