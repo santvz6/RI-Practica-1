@@ -49,12 +49,10 @@ Despliegue y análisis de un entorno de robótica sobre **ROS 2 (Jazzy Jalisco)*
 │   └── mapa_laboratorio.yaml
 ├── memoria/                    # Documentación técnica, análisis e informes
 │   ├── capturas/               # Evidencias visuales de simulación, terminales y poses
-│   │   ├── recorrido/          # Subplots y etapas del Oxford Spires Dataset
-│   │   ├── terminales/         # Terminales Ubuntu y master workspace de Bloque 3 y 4
-│   │   └── ur3e/               # Galería de poses y simulación Gazebo/RViz2 del UR3e
-│   ├── reporte_nav2_pipeline.md
-│   ├── reporte_rko_lio_pipeline.md
-│   └── reporte_ur3e_moveit_pipeline.md
+│   │   ├── bloque2/            # Evidencias de mapeo SLAM, localización AMCL y Nav2
+│   │   └── bloque4/            # Galería de poses y simulación Gazebo/RViz2 del UR3e
+│   ├── main.pdf                # Memoria técnica compilada en PDF
+│   └── main.tex                # Código fuente LaTeX de la memoria técnica
 └── scripts/                    # Scripts Python de soporte e interacción ROS 2
     ├── capture_runner.sh       # Script de automatización de capturas
     ├── generate_grid_poses_ur3e.py # Generador de figura multipanel de poses del UR3e
@@ -111,5 +109,10 @@ docker exec -it robotica_inteligente_grado bash
 ---
 
 ## Autores
-- Grado en Ingeniería en Inteligencia Artificial (EPS - UA)
-- Curso 4º (2026/2027) - Asignatura: *Robótica Inteligente*
+- Santiago Alvarez Geanta
+- Guillermo Garcia Blazquez
+- David Martinez Gomez
+- Taron Sargsyan
+
+*Grado en Ingeniería en Inteligencia Artificial (EPS - Universidad de Alicante) — Curso 4º (2026/2027)*
+*Asignatura: Robótica Inteligente (33683)*

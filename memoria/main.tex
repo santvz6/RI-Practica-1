@@ -35,7 +35,7 @@
     citecolor=uaBlue,
     urlcolor=uaBlue,
     pdftitle={Memoria Técnica - Práctica 1: Robótica Móvil y Manipulación},
-    pdfauthor={Grado en Ingeniería en Inteligencia Artificial - Universidad de Alicante}
+    pdfauthor={Santiago Álvarez Geanta, Guillermo García Blázquez, David Martínez Gómez, Taron Sargsyan}
 }
 
 % Configuración de cabeceras y pies de página
@@ -92,23 +92,26 @@
     {\Large\bfseries Memoria Técnica de Práctica 1}\\[0.2cm]
     {\large\itshape Introducción a las Herramientas Básicas para Robótica Móvil y Manipulación:\\
     ROS 2, Gazebo Harmonic, Nav2, MoveIt 2 y Oxford Spires Dataset}\\[0.3cm]
-    \rule{\linewidth}{1.5pt}\\[2.5cm]
+    \rule{\linewidth}{1.5pt}\\[1.4cm]
 
     \begin{minipage}{0.48\textwidth}
         \begin{flushleft}
             \textbf{\color{uaBlue} Profesor / Tutor:}\\[0.15cm]
             M.A. Muñoz-Bañón\\
             \small Dpto. de Física, Ingeniería de Sistemas\\
-            y Teoría de la Señal
+            y Teoría de la Señal\\[0.6cm]
+            \textbf{\color{uaBlue} Fecha de Evaluación:}\\[0.15cm]
+            Octubre de 2026
         \end{flushleft}
     \end{minipage}
     \hfill
     \begin{minipage}{0.48\textwidth}
         \begin{flushright}
             \textbf{\color{uaBlue} Equipo de Prácticas:}\\[0.15cm]
-            Santiago Álvarez González (\texttt{santvz6})\\[0.3cm]
-            \textbf{\color{uaBlue} Fecha de Evaluación:}\\[0.15cm]
-            Octubre de 2026
+            Santiago Álvarez Geanta\\
+            Guillermo García Blázquez\\
+            David Martínez Gómez\\
+            Taron Sargsyan
         \end{flushright}
     \end{minipage}
 
@@ -396,7 +399,7 @@ El planificador global de Nav2 aceptó el objetivo de forma inmediata y trazó l
 El registro de la terminal con las trazas de estado y tiempos de la misión se recoge en el Listado~\ref{lst:salida_nav2_python}.
 
 \begin{lstlisting}[language=bash,caption={Registro de ejecución y retroalimentación asíncrona en consola (\texttt{nav2\_send\_goal.py}).},label={lst:salida_nav2_python}]
-developer@santvz6:~/ros2_ws$ python3 p1_scripts/nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
+developer@robotica-desktop:~/ros2_ws$ python3 p1_scripts/nav2_send_goal.py --x 1.5 --y -0.5 --yaw 90
 [INFO] [nav2_goal_sender_node]: Inicializando cliente de navegacion autonoma Nav2 (use_sim_time=True)...
 [INFO] [nav2_goal_sender_node]: Conectando con el servidor de accion "navigate_to_pose"...
 [INFO] [nav2_goal_sender_node]: Enviando objetivo -> X: 1.50 m, Y: -0.50 m, Yaw: 90.0 deg (1.57 rad) en frame "map"
